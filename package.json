@@ -1,0 +1,25 @@
+{
+  "name": "browse-video-game",
+  "version": "1.0.0",
+  "description": "Juego de combate por turnos en el navegador",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/malonso-spec/Browser-game-project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/malonso-spec/Browser-game-project/issues"
+  },
+  "homepage": "https://github.com/malonso-spec/Browser-game-project#readme",
+  "devDependencies": {
+    "vite": "^7.3.1"
+  }
+}
