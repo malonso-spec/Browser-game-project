@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Combate por Turnos</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <h1>⚔️ Combate por Turnos</h1>
+  <div class="game-info">
+    <span>Turnos: <strong id="turnCount">1</strong>/5</span>
+    <span>Cartas restantes: <strong id="cardsLeft">5</strong></span>
+  </div>
+
+  <div class="arena">
+    <video class="arena-video" autoplay loop muted playsinline src="assets/videos/default.mp4"></video>
+    <div class="turn-info">Turno <span id="currentTurn">1</span></div>
+    <div class="enemy-state" id="enemyState">Estado: Cargando...</div>
+
+    <div class="fighter player-side" id="playerFighter">
+      <div class="health-bar"><div class="health-fill player-health" id="playerHealthBar" style="width:100%"></div></div>
+      <span class="health-text">Jugador: <span id="playerHP">100</span>%</span>
+    </div>
+
+    <div class="fighter enemy-side" id="enemyFighter">
+      <div class="health-bar"><div class="health-fill enemy-health" id="enemyHealthBar" style="width:100%"></div></div>
+      <span class="health-text">Enemigo: <span id="enemyHP">100</span>%</span>
+    </div>
+
+    <div class="bonus-indicator bonus-available" id="bonusIndicator">⚡ Bonus: T1 +10p | T2 +20p | T3 +30p</div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="hint">
+    💡 <strong>Pista:</strong> El enemigo está <span class="state-hint" id="stateHint">...</span> — ¡Encuentra la carta correcta para activar el bonus!
+  </div>
+
+  <div class="log" id="log"></div>
+
+  <div class="result hidden" id="result">
+    <h2 id="resultText"></h2>
+    <p id="resultDesc"></p>
+    <button class="btn" onclick="restart()">Jugar de nuevo</button>
+  </div>
+
+  <div class="crit-alert hidden" id="critAlert">¡CRÍTICO!</div>
+
+  <script src="js/config.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
