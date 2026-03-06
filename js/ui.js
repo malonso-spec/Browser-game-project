@@ -55,22 +55,47 @@ function showCritAlert() {
   setTimeout(() => alert.classList.add('hidden'), 600);
 }
 
-function playVideo(src, loop = false) {
-  const video = document.querySelector('.arena-video');
-  video.src = src;
-  video.loop = loop;
-  video.play();
+// Default video always plays in background; attack video is layered on top via z-index
+// Seamless loop for default video
+(function initSeamlessLoop() {
+  const REWIND_MARGIN = 0.15;
+  const defaultVideo = document.getElementById('videoDefault');
+  if (!defaultVideo) return;
+  defaultVideo.loop = false;
+  defaultVideo.addEventListener('timeupdate', () => {
+    if (defaultVideo.duration && defaultVideo.currentTime >= defaultVideo.duration - REWIND_MARGIN) {
+      defaultVideo.currentTime = 0;
+    }
+  });
+})();
+
+function playVideo(src) {
+  const attackVideo = document.getElementById('videoAttack');
+  if (src === VIDEO_DEFAULT) {
+    attackVideo.classList.remove('active');
+  } else {
+    attackVideo.currentTime = 0;
+    attackVideo.play();
+    attackVideo.classList.add('active');
+  }
 }
 
 function playEnemyAttackVideo() {
   return new Promise(resolve => {
-    const video = document.querySelector('.arena-video');
-    playVideo(VIDEO_ENEMY_ATTACK, false);
-    video.onended = () => {
-      playVideo(VIDEO_DEFAULT, true);
-      video.onended = null;
-      resolve();
-    };
+    const attackVideo = document.getElementById('videoAttack');
+    const EARLY_CUT = 0.15; // fade out before the last frames to avoid black flash
+    attackVideo.currentTime = 0;
+    attackVideo.play();
+    attackVideo.classList.add('active');
+    function onTime() {
+      if (attackVideo.duration && attackVideo.currentTime >= attackVideo.duration - EARLY_CUT) {
+        attackVideo.removeEventListener('timeupdate', onTime);
+        attackVideo.classList.remove('active');
+        attackVideo.pause();
+        setTimeout(resolve, 220);
+      }
+    }
+    attackVideo.addEventListener('timeupdate', onTime);
   });
 }
 

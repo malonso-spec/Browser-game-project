@@ -14,7 +14,8 @@
   </div>
 
   <div class="arena">
-    <video class="arena-video" autoplay loop muted playsinline src="assets/videos/default.mp4"></video>
+    <video id="videoDefault" class="arena-video active" autoplay muted playsinline preload="auto" src="assets/videos/default.mp4"></video>
+    <video id="videoAttack" class="arena-video" muted playsinline preload="auto" src="assets/videos/bot-attack.mp4"></video>
     <div class="turn-info">Turno <span id="currentTurn">1</span></div>
     <div class="enemy-state" id="enemyState">Estado: Cargando...</div>
 
