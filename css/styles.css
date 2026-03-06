@@ -58,6 +58,16 @@ h1 {
   z-index: 0;
 }
 
+#videoAttack {
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+#videoAttack.active {
+  opacity: 1;
+}
+
 /* Fighters */
 .fighter {
   position: absolute;
