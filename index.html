@@ -7,6 +7,16 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <!-- Loading screen -->
+  <div id="loadingScreen" class="loading-screen">
+    <h1>⚔️ Combate por Turnos</h1>
+    <p class="loading-text">Cargando recursos...</p>
+    <div class="loading-bar-track">
+      <div class="loading-bar-fill" id="loadingBar"></div>
+    </div>
+    <span class="loading-percent" id="loadingPercent">0%</span>
+  </div>
+
   <h1>⚔️ Combate por Turnos</h1>
   <div class="game-info">
     <span>Turnos: <strong id="turnCount">1</strong>/5</span>
@@ -14,9 +24,9 @@
   </div>
 
   <div class="arena">
-    <video id="videoBg" class="arena-video" autoplay muted playsinline preload="auto" src="assets/videos/background.mp4"></video>
-    <img id="userSprite" class="arena-sprite sprite-left" alt="player">
-    <img id="botSprite" class="arena-sprite sprite-right" alt="enemy">
+    <canvas id="bgCanvas" class="arena-bg"></canvas>
+    <canvas id="userCanvas" class="arena-sprite sprite-left"></canvas>
+    <canvas id="botCanvas" class="arena-sprite sprite-right"></canvas>
     <div class="turn-info">Turno <span id="currentTurn">1</span></div>
     <div class="enemy-state" id="enemyState">Estado: Cargando...</div>
 
@@ -31,6 +41,7 @@
     </div>
 
     <div class="bonus-indicator bonus-available" id="bonusIndicator">⚡ Bonus: T1 +10p | T2 +20p | T3 +30p</div>
+    <div class="frame-counter" id="frameCounter">BG: 0/75</div>
   </div>
 
   <div class="cards" id="cards"></div>

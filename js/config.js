@@ -1,3 +1,4 @@
+// --- Game Configuration ---
 const STATES = ['Eufórico', 'Ebrio', 'Agobiado', 'Empanado'];
 
 const STATE_CARD_MAP = {
@@ -14,8 +15,6 @@ const CARDS = [
   { id: 'D', name: 'Devastación', icon: '🔥', baseDmg: 20, state: 'Empanado', hasBonus: true },
   { id: 'R', name: 'Recuperación', icon: '💚', heal: 25, isHeal: true }
 ];
-
-const VIDEO_DEFAULT = 'assets/videos/background.mp4';
 
 const CRIT_CHANCE = 0.33;
 const ENEMY_DMG = 25;

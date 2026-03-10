@@ -21,6 +21,52 @@ h1 {
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
 }
 
+/* Loading screen */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  transition: opacity 0.5s ease;
+}
+
+.loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-text {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.loading-bar-track {
+  width: 280px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  border-radius: 6px;
+  transition: width 0.15s ease;
+}
+
+.loading-percent {
+  color: #fbbf24;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
 /* Game info */
 .game-info {
   display: flex;
@@ -48,7 +94,7 @@ h1 {
   background: #000;
 }
 
-.arena-video {
+.arena-bg {
   position: absolute;
   top: 0;
   left: 0;
@@ -68,11 +114,33 @@ h1 {
 }
 
 .sprite-left {
-  left: 5%;
+  left: 3%;
+  z-index: 2;
 }
 
 .sprite-right {
-  right: 5%;
+  right: 3%;
+  z-index: 1;
+}
+
+.sprite-right.z-front {
+  z-index: 3;
+}
+
+/* Frame counter (debug) */
+.frame-counter {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-family: monospace;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  z-index: 10;
+  pointer-events: none;
 }
 
 /* Fighters */
@@ -276,7 +344,6 @@ h1 {
 .card.heal .card-damage strong {
   color: #10b981;
 }
-
 
 /* Result overlay */
 .result {
