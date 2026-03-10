@@ -39,6 +39,7 @@ function renderCards(game) {
 
 function addLog(turn, msg, type) {
   const log = document.getElementById('log');
+  if (!log) return;
   log.innerHTML += `<div class="log-entry ${type}">[T${turn}] ${msg}</div>`;
   log.scrollTop = log.scrollHeight;
 }
@@ -55,47 +56,121 @@ function showCritAlert() {
   setTimeout(() => alert.classList.add('hidden'), 600);
 }
 
-// Default video always plays in background; attack video is layered on top via z-index
-// Seamless loop for default video
+// --- Seamless background video loop ---
 (function initSeamlessLoop() {
   const REWIND_MARGIN = 0.15;
-  const defaultVideo = document.getElementById('videoDefault');
-  if (!defaultVideo) return;
-  defaultVideo.loop = false;
-  defaultVideo.addEventListener('timeupdate', () => {
-    if (defaultVideo.duration && defaultVideo.currentTime >= defaultVideo.duration - REWIND_MARGIN) {
-      defaultVideo.currentTime = 0;
+  const bg = document.getElementById('videoBg');
+  if (!bg) return;
+  bg.loop = false;
+  bg.addEventListener('timeupdate', () => {
+    if (bg.duration && bg.currentTime >= bg.duration - REWIND_MARGIN) {
+      bg.currentTime = 0;
     }
   });
 })();
 
-function playVideo(src) {
-  const attackVideo = document.getElementById('videoAttack');
-  if (src === VIDEO_DEFAULT) {
-    attackVideo.classList.remove('active');
-  } else {
-    attackVideo.currentTime = 0;
-    attackVideo.play();
-    attackVideo.classList.add('active');
+// --- Frame Animator ---
+class FrameAnimator {
+  constructor(imgEl, folder, count, fps) {
+    this.imgEl = imgEl;
+    this.fps = fps;
+    this.frames = [];
+    this.intervalId = null;
+    this.current = 0;
+    // Preload all frames
+    for (let i = 0; i < count; i++) {
+      const img = new Image();
+      img.src = `${folder}/frame_${String(i).padStart(5, '0')}.png`;
+      this.frames.push(img);
+    }
+  }
+
+  startLoop() {
+    this.stopLoop();
+    this.current = 0;
+    this.imgEl.src = this.frames[0].src;
+    this.intervalId = setInterval(() => {
+      this.current = (this.current + 1) % this.frames.length;
+      this.imgEl.src = this.frames[this.current].src;
+    }, 1000 / this.fps);
+  }
+
+  stopLoop() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+  }
+
+  playOnce() {
+    return new Promise(resolve => {
+      this.stopLoop();
+      this.current = 0;
+      this.imgEl.src = this.frames[0].src;
+      this.intervalId = setInterval(() => {
+        this.current++;
+        if (this.current >= this.frames.length) {
+          this.stopLoop();
+          resolve();
+          return;
+        }
+        this.imgEl.src = this.frames[this.current].src;
+      }, 1000 / this.fps);
+    });
   }
 }
 
+// Create animators
+const botSprite = document.getElementById('botSprite');
+const userSprite = document.getElementById('userSprite');
+const botDefaultAnim = new FrameAnimator(botSprite, 'assets/frames/bot-default', 75, 24);
+const userDefaultAnim = new FrameAnimator(userSprite, 'assets/frames/user-default', 75, 24);
+const botAttackAnim = new FrameAnimator(botSprite, 'assets/frames/bot-attack', 104, 24);
+const userDefenseAnim = new FrameAnimator(userSprite, 'assets/frames/user-defense', 75, 24);
+const botDefenseAnim = new FrameAnimator(botSprite, 'assets/frames/bot-defense', 75, 24);
+
+// Start idle loops
+function startIdleAnimations() {
+  botDefaultAnim.startLoop();
+  userDefaultAnim.startLoop();
+}
+startIdleAnimations();
+
+function playVideo() {
+  // kept for compatibility with game.js init() call
+}
+
+// Bot attacks → 3s later main character defends
 function playEnemyAttackVideo() {
-  return new Promise(resolve => {
-    const attackVideo = document.getElementById('videoAttack');
-    const EARLY_CUT = 0.15; // fade out before the last frames to avoid black flash
-    attackVideo.currentTime = 0;
-    attackVideo.play();
-    attackVideo.classList.add('active');
-    function onTime() {
-      if (attackVideo.duration && attackVideo.currentTime >= attackVideo.duration - EARLY_CUT) {
-        attackVideo.removeEventListener('timeupdate', onTime);
-        attackVideo.classList.remove('active');
-        attackVideo.pause();
-        setTimeout(resolve, 220);
-      }
-    }
-    attackVideo.addEventListener('timeupdate', onTime);
+  return new Promise(async resolve => {
+    botDefaultAnim.stopLoop();
+    // Start bot attack + schedule defense 3s later
+    const attackDone = botAttackAnim.playOnce();
+    const defenseDone = new Promise(async r => {
+      await new Promise(wait => setTimeout(wait, 3000));
+      userDefaultAnim.stopLoop();
+      await userDefenseAnim.playOnce();
+      r();
+    });
+    // Wait for both to finish
+    await Promise.all([attackDone, defenseDone]);
+    botDefaultAnim.startLoop();
+    userDefaultAnim.startLoop();
+    resolve();
+  });
+}
+
+// Main character attacks (future) + bot defends simultaneously
+function playPlayerAttackAnimation() {
+  return new Promise(async resolve => {
+    // TODO: main character attack anim when available
+    // Wait 3s to simulate attack before bot reacts
+    await new Promise(r => setTimeout(r, 3000));
+    botDefaultAnim.stopLoop();
+    await botDefenseAnim.playOnce();
+    // Defense done → resume idle
+    botDefaultAnim.startLoop();
+    resolve();
   });
 }
 
