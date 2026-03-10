@@ -14,8 +14,9 @@
   </div>
 
   <div class="arena">
-    <video id="videoDefault" class="arena-video active" autoplay muted playsinline preload="auto" src="assets/videos/default.mp4"></video>
-    <video id="videoAttack" class="arena-video" muted playsinline preload="auto" src="assets/videos/bot-attack.mp4"></video>
+    <video id="videoBg" class="arena-video" autoplay muted playsinline preload="auto" src="assets/videos/background.mp4"></video>
+    <img id="userSprite" class="arena-sprite sprite-left" alt="player">
+    <img id="botSprite" class="arena-sprite sprite-right" alt="enemy">
     <div class="turn-info">Turno <span id="currentTurn">1</span></div>
     <div class="enemy-state" id="enemyState">Estado: Cargando...</div>
 
@@ -38,9 +39,7 @@
     💡 <strong>Pista:</strong> El enemigo está <span class="state-hint" id="stateHint">...</span> — ¡Encuentra la carta correcta para activar el bonus!
   </div>
 
-  <div class="log" id="log"></div>
-
-  <div class="result hidden" id="result">
+<div class="result hidden" id="result">
     <h2 id="resultText"></h2>
     <p id="resultDesc"></p>
     <button class="btn" onclick="restart()">Jugar de nuevo</button>

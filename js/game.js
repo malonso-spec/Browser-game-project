@@ -26,13 +26,15 @@ function init() {
   updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
   document.getElementById('enemyState').textContent = 'Estado: ' + game.enemyState;
   document.getElementById('stateHint').textContent = game.enemyState;
-  document.getElementById('log').innerHTML = '';
+  const logEl = document.getElementById('log');
+  if (logEl) logEl.innerHTML = '';
   document.getElementById('result').classList.add('hidden');
   document.getElementById('bonusIndicator').className = 'bonus-indicator bonus-available';
   document.getElementById('bonusIndicator').textContent = '⚡ Bonus: T1 +10p | T2 +20p | T3 +30p';
 
   renderCards(game);
-  playVideo(VIDEO_DEFAULT, true);
+  playVideo(VIDEO_DEFAULT);
+  startIdleAnimations();
   addLog(game.turn, `¡Combate iniciado! El enemigo está ${game.enemyState}.`, 'system-msg');
   addLog(game.turn, '⚡ Bonus escalonado: T1 +10p | T2 +20p | T3 +30p ¡Arriesga para ganar más!', 'system-msg');
 }
@@ -70,6 +72,8 @@ async function playCard(id) {
 
     game.enemyHP = Math.max(0, game.enemyHP - dmg);
     shake(document.getElementById('enemyFighter'));
+    // Bot receives hit → play bot defense animation
+    await playPlayerAttackAnimation();
   }
 
   updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);

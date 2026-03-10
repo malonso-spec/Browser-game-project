@@ -40,7 +40,7 @@ h1 {
 .arena {
   position: relative;
   width: 100%;
-  max-width: 700px;
+  max-width: 900px;
   aspect-ratio: 16/9;
   border-radius: 16px;
   margin-bottom: 15px;
@@ -58,14 +58,21 @@ h1 {
   z-index: 0;
 }
 
-#videoAttack {
+/* Sprite characters */
+.arena-sprite {
+  position: absolute;
+  bottom: 0;
+  height: 100%;
+  width: auto;
   z-index: 1;
-  opacity: 0;
-  transition: opacity 220ms ease;
 }
 
-#videoAttack.active {
-  opacity: 1;
+.sprite-left {
+  left: 5%;
+}
+
+.sprite-right {
+  right: 5%;
 }
 
 /* Fighters */
@@ -270,32 +277,6 @@ h1 {
   color: #10b981;
 }
 
-/* Log */
-.log {
-  width: 100%;
-  max-width: 580px;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 10px;
-  padding: 12px;
-  max-height: 100px;
-  overflow-y: auto;
-}
-
-.log-entry {
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 0.8rem;
-}
-
-.log-entry:last-child {
-  border: none;
-}
-
-.player-action { color: #00d9ff; }
-.enemy-action { color: #ff6b81; }
-.enemy-crit { color: #ff0040; font-weight: bold; }
-.system-msg { color: #ffd700; }
-.bonus-msg { color: #10b981; }
 
 /* Result overlay */
 .result {
