@@ -65,7 +65,7 @@ async function playCard(id) {
 
     game.enemyHP = Math.max(0, game.enemyHP - dmg);
     shake($('enemyFighter'));
-    await playPlayerAttack();
+    await playPlayerAttack(game.enemyHP <= 0);
   }
 
   updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
@@ -84,8 +84,6 @@ async function playCard(id) {
   }
 
   // --- Enemy counterattack ---
-  await playEnemyAttack();
-
   let enemyDmg;
   if (game.shieldActive) {
     enemyDmg = ENEMY_DMG_BLOCKED;
@@ -97,6 +95,9 @@ async function playCard(id) {
   } else {
     enemyDmg = ENEMY_DMG;
   }
+
+  const willKillPlayer = game.playerHP - enemyDmg <= 0;
+  await playEnemyAttack(willKillPlayer);
 
   game.playerHP = Math.max(0, game.playerHP - enemyDmg);
   shake($('playerFighter'));

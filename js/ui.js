@@ -23,6 +23,7 @@ function renderCards(game) {
     const isUsed = game.usedCards.includes(c.id);
     const isBonusMatch = c.id === bonusCard && !game.bonusUsed && game.turn <= 3;
     const cls = ['card'];
+    if (!c.isHeal) cls.push('attack');
     if (isUsed) cls.push('used');
     if (game.isProcessing) cls.push('disabled');
     if (isBonusMatch && !isUsed) cls.push('bonus-match');
@@ -67,6 +68,7 @@ function showResult(win, reason) {
 // ============================================================
 const activeAnimators = new Set();
 const frameCounterEl = $('frameCounter');
+const userFrameCounterEl = $('userFrameCounter');
 
 function animationLoop(timestamp) {
   for (const anim of activeAnimators) {
@@ -74,6 +76,12 @@ function animationLoop(timestamp) {
   }
   if (bgAnim && bgAnim.ready) {
     frameCounterEl.textContent = `BG: ${bgAnim.current}/${bgAnim.count}`;
+  }
+  // Show which user animator is active and its frame
+  const activeUser = [userAttackAnim, userDefenseAnim, userDefaultAnim].find(a => activeAnimators.has(a));
+  if (activeUser) {
+    const label = activeUser === userAttackAnim ? 'ATK' : activeUser === userDefenseAnim ? 'DEF' : 'IDLE';
+    userFrameCounterEl.textContent = `MC ${label}: ${activeUser.current}/${activeUser.count}`;
   }
   requestAnimationFrame(animationLoop);
 }
@@ -148,11 +156,19 @@ class FrameAnimator {
         this.direction = 1;
       }
     } else if (this.mode === 'oncePingPong') {
-      if (this.current >= this.bitmaps.length - 1) {
+      if (this.current >= this.bitmaps.length - 1 && this.direction === 1) {
         this.current = this.bitmaps.length - 1;
-        this.direction = -1;
-      } else if (this.current <= 0 && this.direction === -1) {
-        this.current = 0;
+        this.direction = 0; // pause at peak
+        this.peakUntil = timestamp + (this.peakHold || 0);
+      } else if (this.direction === 0) {
+        // Holding at peak frame
+        if (timestamp >= this.peakUntil) {
+          this.direction = -1;
+        }
+        this._draw();
+        return;
+      } else if (this.current <= this.reverseStop && this.direction === -1) {
+        this.current = this.reverseStop;
         const resolve = this.onceResolve;
         this.stop();
         if (resolve) resolve();
@@ -184,6 +200,14 @@ class FrameAnimator {
 
   _draw() {
     const bmp = this.bitmaps[this.current];
+    if (!bmp) return;
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.drawImage(bmp, 0, 0);
+  }
+
+  _drawFrame(index) {
+    if (!this.ready) return;
+    const bmp = this.bitmaps[index];
     if (!bmp) return;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.drawImage(bmp, 0, 0);
@@ -232,8 +256,10 @@ class FrameAnimator {
     });
   }
 
-  // Play forward then reverse (ping-pong once), resolve when back to frame 0
-  playOncePingPong() {
+  // Play forward then reverse (ping-pong once)
+  // reverseFrames = how many frames on the way back (default: all)
+  // holdMs = pause at peak frame before reversing (default: 0)
+  playOncePingPong(reverseFrames, holdMs = 0) {
     return new Promise(resolve => {
       this.stop();
       this.mode = 'oncePingPong';
@@ -241,6 +267,11 @@ class FrameAnimator {
       this.current = 0;
       this.lastTime = 0;
       this.onceResolve = resolve;
+      this.peakHold = holdMs;
+      this.peakUntil = 0;
+      this.reverseStop = reverseFrames !== undefined
+        ? this.bitmaps.length - 1 - reverseFrames
+        : 0;
       activeAnimators.add(this);
     });
   }
@@ -255,13 +286,13 @@ class FrameAnimator {
 // ============================================================
 // Create animators
 // ============================================================
-const bgAnim          = new FrameAnimator($('bgCanvas'),   'assets/frames/bg',           59,  50);
-const userDefaultAnim = new FrameAnimator($('userCanvas'),  'assets/frames/user-default',  75,  50);
-const userAttackAnim  = new FrameAnimator($('userCanvas'),  'assets/frames/user-attack',   75,  50);
-const userDefenseAnim = new FrameAnimator($('userCanvas'),  'assets/frames/user-defense',  75,  50);
-const botDefaultAnim  = new FrameAnimator($('botCanvas'),   'assets/frames/bot-default',   75,  50);
-const botAttackAnim   = new FrameAnimator($('botCanvas'),   'assets/frames/bot-attack',   104,  50);
-const botDefenseAnim  = new FrameAnimator($('botCanvas'),   'assets/frames/bot-defense',   75,  50);
+const bgAnim          = new FrameAnimator($('bgCanvas'),   'assets/frames/bg',           59,  24);
+const userDefaultAnim = new FrameAnimator($('userCanvas'),  'assets/frames/user-default',  68,  30);
+const userAttackAnim  = new FrameAnimator($('userCanvas'),  'assets/frames/user-attack',   75,  30);
+const userDefenseAnim = new FrameAnimator($('userCanvas'),  'assets/frames/user-defense',  75,  30);
+const botDefaultAnim  = new FrameAnimator($('botCanvas'),   'assets/frames/bot-default',   75,  30);
+const botAttackAnim   = new FrameAnimator($('botCanvas'),   'assets/frames/bot-attack',   104,  30);
+const botDefenseAnim  = new FrameAnimator($('botCanvas'),   'assets/frames/bot-defense',   75,  30);
 
 // Preload all frames with progress tracking
 const allAnimators = [bgAnim, userDefaultAnim, userAttackAnim, userDefenseAnim, botDefaultAnim, botAttackAnim, botDefenseAnim];
@@ -297,26 +328,30 @@ function startIdleAnimations() {
 // ============================================================
 
 // Player attacks (ping-pong) + bot defends (holds last frame until attack ends)
-function playPlayerAttack() {
+function playPlayerAttack(killingBlow) {
   return new Promise(async resolve => {
     userDefaultAnim.stop();
-    const attack = userAttackAnim.playOncePingPong();
+    const attack = userAttackAnim.playOncePingPong(28, 300);
 
     const defense = (async () => {
-      await delay(1000);
+      await delay(1050);
       botDefaultAnim.stop();
-      await botDefenseAnim.playOnce();
+      if (killingBlow) {
+        botDefenseAnim._drawFrame(0);
+      } else {
+        await botDefenseAnim.playOnce();
+      }
     })();
 
     await Promise.all([attack, defense]);
     userDefaultAnim.startLoop();
-    botDefaultAnim.startLoop();
+    if (!killingBlow) botDefaultAnim.startLoop();
     resolve();
   });
 }
 
 // Bot attacks (z-front) → 1s later player defends
-function playEnemyAttack() {
+function playEnemyAttack(killingBlow) {
   const botCanvas = $('botCanvas');
   return new Promise(async resolve => {
     botCanvas.classList.add('z-front');
@@ -326,13 +361,17 @@ function playEnemyAttack() {
     const defense = (async () => {
       await delay(2000);
       userDefaultAnim.stop();
-      await userDefenseAnim.playOnce();
+      if (killingBlow) {
+        userDefenseAnim._drawFrame(0);
+      } else {
+        await userDefenseAnim.playOnce();
+      }
     })();
 
     await Promise.all([attack, defense]);
     botCanvas.classList.remove('z-front');
     botDefaultAnim.startLoop();
-    userDefaultAnim.startLoop();
+    if (!killingBlow) userDefaultAnim.startLoop();
     resolve();
   });
 }

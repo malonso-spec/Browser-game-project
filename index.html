@@ -17,11 +17,8 @@
     <span class="loading-percent" id="loadingPercent">0%</span>
   </div>
 
-  <h1>⚔️ Combate por Turnos</h1>
-  <div class="game-info">
-    <span>Turnos: <strong id="turnCount">1</strong>/5</span>
-    <span>Cartas restantes: <strong id="cardsLeft">5</strong></span>
-  </div>
+  <span id="turnCount" class="hidden"></span>
+  <span id="cardsLeft" class="hidden"></span>
 
   <div class="arena">
     <canvas id="bgCanvas" class="arena-bg"></canvas>
@@ -41,7 +38,8 @@
     </div>
 
     <div class="bonus-indicator bonus-available" id="bonusIndicator">⚡ Bonus: T1 +10p | T2 +20p | T3 +30p</div>
-    <div class="frame-counter" id="frameCounter">BG: 0/75</div>
+    <div class="frame-counter" id="frameCounter">BG: 0/59</div>
+    <div class="frame-counter frame-counter-left" id="userFrameCounter">MC: 0/75</div>
   </div>
 
   <div class="cards" id="cards"></div>
