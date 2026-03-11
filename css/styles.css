@@ -21,6 +21,52 @@ h1 {
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
 }
 
+/* Loading screen */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  transition: opacity 0.5s ease;
+}
+
+.loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-text {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.loading-bar-track {
+  width: 280px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  border-radius: 6px;
+  transition: width 0.15s ease;
+}
+
+.loading-percent {
+  color: #fbbf24;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
 /* Game info */
 .game-info {
   display: flex;
@@ -40,7 +86,7 @@ h1 {
 .arena {
   position: relative;
   width: 100%;
-  max-width: 900px;
+  max-width: 1000px;
   aspect-ratio: 16/9;
   border-radius: 16px;
   margin-bottom: 15px;
@@ -48,7 +94,7 @@ h1 {
   background: #000;
 }
 
-.arena-video {
+.arena-bg {
   position: absolute;
   top: 0;
   left: 0;
@@ -68,11 +114,39 @@ h1 {
 }
 
 .sprite-left {
-  left: 5%;
+  left: 1%;
+  z-index: 2;
 }
 
 .sprite-right {
   right: 5%;
+  bottom: 3%;
+  z-index: 1;
+}
+
+.sprite-right.z-front {
+  z-index: 3;
+}
+
+/* Frame counters (debug) */
+.frame-counter {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-family: monospace;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.frame-counter-left {
+  left: 12px;
+  transform: none;
 }
 
 /* Fighters */
@@ -217,6 +291,11 @@ h1 {
   position: relative;
 }
 
+.card.attack {
+  background: url('../assets/cards/attack.jpeg') center/cover no-repeat;
+  border-color: #ff6b35;
+}
+
 .card:hover:not(.used):not(.disabled) {
   transform: translateY(-8px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
@@ -225,6 +304,11 @@ h1 {
 .card.bonus-match:not(.used):not(.disabled) {
   border-color: #fbbf24;
   box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+}
+
+.card.attack.bonus-match:not(.used):not(.disabled) {
+  border-color: #fbbf24;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
 }
 
 .card.used {
@@ -247,8 +331,17 @@ h1 {
   color: #64748b;
 }
 
+.card.attack .card-letter {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
 .card-icon {
   font-size: 1.8rem;
+}
+
+.card.attack .card-icon {
+  display: none;
 }
 
 .card-name {
@@ -258,9 +351,17 @@ h1 {
   color: #e2e8f0;
 }
 
+.card.attack .card-name {
+  display: none;
+}
+
 .card-damage {
   font-size: 0.75rem;
   color: #94a3b8;
+}
+
+.card.attack .card-damage {
+  display: none;
 }
 
 .card-damage strong {
@@ -273,10 +374,13 @@ h1 {
   opacity: 0.8;
 }
 
+.card.attack .card-bonus {
+  display: none;
+}
+
 .card.heal .card-damage strong {
   color: #10b981;
 }
-
 
 /* Result overlay */
 .result {
