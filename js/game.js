@@ -56,10 +56,12 @@ async function playCard(id) {
     game.shieldActive = true;
   } else {
     let dmg = card.baseDmg;
+    let isBonus = false;
 
     if (id === bonusCard && !game.bonusUsed && game.turn <= 3) {
       const bonus = BONUS_PER_TURN[game.turn];
       dmg += bonus;
+      isBonus = true;
       game.bonusUsed = true;
       $('bonusIndicator').className = 'bonus-indicator bonus-used';
       $('bonusIndicator').textContent = `✓ Bonus T${game.turn}: +${bonus}p`;
@@ -67,13 +69,14 @@ async function playCard(id) {
 
     game.enemyHP = Math.max(0, game.enemyHP - dmg);
     shake($('enemyFighter'));
-    await playPlayerAttack(game.enemyHP <= 0);
+    await playPlayerAttack(game.enemyHP <= 0, isBonus);
   }
 
   updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
 
   // --- Check enemy defeated ---
   if (game.enemyHP <= 0) {
+    await delay(1500);
     endGame(game.bonusUsed, game.bonusUsed
       ? '¡Activaste el bonus y derrotaste al enemigo!'
       : 'Derrotaste al enemigo pero sin activar el bonus. ¡El bonus es obligatorio para ganar!');
@@ -107,6 +110,7 @@ async function playCard(id) {
 
   // --- Check player defeated ---
   if (game.playerHP <= 0) {
+    await delay(1500);
     endGame(false, 'Tu vida llegó a 0%. ¡Intenta usar Recuperación estratégicamente!');
     return;
   }
