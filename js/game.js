@@ -30,6 +30,8 @@ function init() {
   $('enemyState').textContent = 'Estado: ' + game.enemyState;
   $('stateHint').textContent = game.enemyState;
   $('result').classList.add('hidden');
+  $('botCanvas').classList.remove('defeated');
+  $('userCanvas').classList.remove('defeated');
   $('bonusIndicator').className = 'bonus-indicator bonus-available';
   $('bonusIndicator').textContent = '⚡ Bonus: T1 +10p | T2 +20p | T3 +30p';
 

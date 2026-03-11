@@ -164,6 +164,7 @@ class FrameAnimator {
         // Holding at peak frame
         if (timestamp >= this.peakUntil) {
           this.direction = -1;
+          this.current = this.bitmaps.length - 7;
         }
         this._draw();
         return;
@@ -327,17 +328,29 @@ function startIdleAnimations() {
 // Combat animations
 // ============================================================
 
+function blinkDamage(canvas) {
+  return new Promise(resolve => {
+    canvas.classList.add('damage-blink');
+    canvas.addEventListener('animationend', () => {
+      canvas.classList.remove('damage-blink');
+      resolve();
+    }, { once: true });
+  });
+}
+
 // Player attacks (ping-pong) + bot defends (holds last frame until attack ends)
 function playPlayerAttack(killingBlow) {
   return new Promise(async resolve => {
     userDefaultAnim.stop();
-    const attack = userAttackAnim.playOncePingPong(28, 300);
+    const attack = userAttackAnim.playOncePingPong(28, 10);
 
     const defense = (async () => {
       await delay(1050);
       botDefaultAnim.stop();
+      botDefenseAnim._drawFrame(0);
+      await blinkDamage($('botCanvas'));
       if (killingBlow) {
-        botDefenseAnim._drawFrame(0);
+        $('botCanvas').classList.add('defeated');
       } else {
         await botDefenseAnim.playOnce();
       }
@@ -361,8 +374,10 @@ function playEnemyAttack(killingBlow) {
     const defense = (async () => {
       await delay(2000);
       userDefaultAnim.stop();
+      userDefenseAnim._drawFrame(0);
+      await blinkDamage($('userCanvas'));
       if (killingBlow) {
-        userDefenseAnim._drawFrame(0);
+        $('userCanvas').classList.add('defeated');
       } else {
         await userDefenseAnim.playOnce();
       }
