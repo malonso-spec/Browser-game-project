@@ -290,13 +290,14 @@ class FrameAnimator {
 const bgAnim          = new FrameAnimator($('bgCanvas'),   'assets/frames/bg',           59,  24);
 const userDefaultAnim = new FrameAnimator($('userCanvas'),  'assets/frames/user-default',  68,  30);
 const userAttackAnim  = new FrameAnimator($('userCanvas'),  'assets/frames/user-attack',   75,  30);
+const userAttackRevAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-attack-reverse', 22, 30);
 const userDefenseAnim = new FrameAnimator($('userCanvas'),  'assets/frames/user-defense',  75,  30);
 const botDefaultAnim  = new FrameAnimator($('botCanvas'),   'assets/frames/bot-default',   75,  30);
 const botAttackAnim   = new FrameAnimator($('botCanvas'),   'assets/frames/bot-attack',   104,  30);
 const botDefenseAnim  = new FrameAnimator($('botCanvas'),   'assets/frames/bot-defense',   75,  30);
 
 // Preload all frames with progress tracking
-const allAnimators = [bgAnim, userDefaultAnim, userAttackAnim, userDefenseAnim, botDefaultAnim, botAttackAnim, botDefenseAnim];
+const allAnimators = [bgAnim, userDefaultAnim, userAttackAnim, userAttackRevAnim, userDefenseAnim, botDefaultAnim, botAttackAnim, botDefenseAnim];
 const totalFrames = allAnimators.reduce((sum, a) => sum + a.count, 0);
 let loadedFrames = 0;
 
@@ -338,11 +339,14 @@ function blinkDamage(canvas) {
   });
 }
 
-// Player attacks (ping-pong) + bot defends (holds last frame until attack ends)
+// Player attacks (forward + reverse sprite) + bot defends
 function playPlayerAttack(killingBlow) {
   return new Promise(async resolve => {
     userDefaultAnim.stop();
-    const attack = userAttackAnim.playOncePingPong(28, 10);
+    const attack = (async () => {
+      await userAttackAnim.playOnce();
+      await userAttackRevAnim.playOnce();
+    })();
 
     const defense = (async () => {
       await delay(1050);
