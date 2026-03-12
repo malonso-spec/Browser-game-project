@@ -188,9 +188,27 @@ class FrameAnimator {
     if (this.mode === 'pingpong') {
       if (this.current >= this.bitmaps.length - 1) {
         this.current = this.bitmaps.length - 1;
+        if (this.loopPause > 0 && !this._pauseUntil) {
+          this._pauseUntil = timestamp + this.loopPause;
+          this._draw();
+          return;
+        } else if (this._pauseUntil && timestamp < this._pauseUntil) {
+          this._draw();
+          return;
+        }
+        this._pauseUntil = 0;
         this.direction = -1;
       } else if (this.current <= 0) {
         this.current = 0;
+        if (this.loopPause > 0 && !this._pauseUntil) {
+          this._pauseUntil = timestamp + this.loopPause;
+          this._draw();
+          return;
+        } else if (this._pauseUntil && timestamp < this._pauseUntil) {
+          this._draw();
+          return;
+        }
+        this._pauseUntil = 0;
         this.direction = 1;
       }
     } else if (this.mode === 'oncePingPong') {
@@ -353,7 +371,7 @@ const botAttackAnim   = new FrameAnimator($('botCanvas'),   'assets/frames/bot-a
 const botDefenseAnim  = new FrameAnimator($('botCanvas'),   'assets/frames/bot-defense',   75,  48);
 const userRockAttackAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-rock-attack', 51, 40);
 const lightningAnim = new FrameAnimator($('lightningCanvas'), 'assets/frames/lightning', 51, 40);
-const userHealAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-heal', 75, 100);
+const userHealAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-heal', 51, 64);
 
 // Preload all frames with progress tracking
 const allAnimators = [bgAnim, userDefaultAnim, userAttackAnim, userAttackRevAnim, userDefenseAnim, botDefaultAnim, botAttackAnim, botDefenseAnim, userRockAttackAnim, lightningAnim, userHealAnim];
@@ -371,43 +389,16 @@ function onFrameLoaded() {
   loadingFill.style.width = `${pct}%`;
 }
 
-// Shift blue/cyan pixels → bubblegum pink in heal bitmaps
-async function bakeHealPink(anim) {
-  if (!anim.ready) return;
-  const c = document.createElement('canvas');
-  c.width = anim.canvas.width;
-  c.height = anim.canvas.height;
-  const ctx = c.getContext('2d', { willReadFrequently: true });
-  for (let i = 0; i < anim.bitmaps.length; i++) {
-    ctx.clearRect(0, 0, c.width, c.height);
-    ctx.drawImage(anim.bitmaps[i], 0, 0);
-    const img = ctx.getImageData(0, 0, c.width, c.height);
-    const d = img.data;
-    for (let p = 0; p < d.length; p += 4) {
-      const r = d[p], g = d[p+1], b = d[p+2];
-      // Detect blue/cyan dominant pixels
-      if (b > 80 && b > r * 1.2 && (b > g * 1.1 || (g > 100 && b > 80))) {
-        // Shift to bubblegum pink: swap blue→red channel, reduce green
-        d[p]   = Math.min(255, b + 40);           // R ← strong pink
-        d[p+1] = Math.min(255, Math.floor(g * 0.5)); // G ← muted
-        d[p+2] = Math.min(255, Math.floor(b * 0.7)); // B ← reduced
-      }
-    }
-    ctx.putImageData(img, 0, 0);
-    anim.bitmaps[i].close();
-    anim.bitmaps[i] = await createImageBitmap(c);
-  }
-}
-
 const allPreloaded = Promise.all(
   allAnimators.map(a => a.preload(onFrameLoaded))
-).then(() => Promise.all([bgAnim.bakeFilter(), bakeHealPink(userHealAnim)])).then(() => {
+).then(() => bgAnim.bakeFilter()).then(() => {
   const screen = $('loadingScreen');
   screen.classList.add('fade-out');
   setTimeout(() => screen.remove(), 500);
 });
 
 function startIdleAnimations() {
+  bgAnim.loopPause = 120;
   bgAnim.startPingPong();
   userDefaultAnim.startLoop();
   botDefaultAnim.startLoop();
@@ -532,9 +523,12 @@ function playEnemyAttack(killingBlow, onHit) {
 // Player heal — bubble animation + shield glow
 function playHealAnimation() {
   return new Promise(async resolve => {
+    const canvas = $('userCanvas');
+    canvas.classList.add('z-front');
     userDefaultAnim.stop();
     await userHealAnim.playOnce();
-    $('userCanvas').classList.add('shield-glow');
+    canvas.classList.remove('z-front');
+    canvas.classList.add('shield-glow');
     userDefaultAnim.startLoop();
     resolve();
   });

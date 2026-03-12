@@ -42,12 +42,13 @@ h1 {
 .loading-screen::before {
   content: '';
   position: absolute;
-  bottom: 50%;
+  bottom: 46%;
   left: 50%;
   transform: translateX(-50%);
   width: 500px;
   height: 350px;
   background: url('../assets/loading-character.png') center / contain no-repeat;
+  filter: grayscale(1) brightness(0.75);
   z-index: 1;
   pointer-events: none;
 }
@@ -68,6 +69,7 @@ h1 {
   border-radius: 4px;
   z-index: 2;
   overflow: hidden;
+  margin-top: 60px;
 }
 .loading-bar-fill {
   width: 0%;
@@ -149,7 +151,8 @@ h1 {
   bottom: 3%;
 }
 
-.sprite-right.z-front {
+.sprite-right.z-front,
+.sprite-left.z-front {
   z-index: 3;
 }
 
