@@ -5,15 +5,28 @@
 const $ = id => document.getElementById(id);
 
 // --- UI updates ---
+function updateHearts(containerId, hp) {
+  const container = $(containerId);
+  const pct = Math.max(0, Math.min(100, hp));
+  const fill = container.querySelector('.hp-bar-fill');
+  const heart = container.querySelector('.hp-heart');
+  fill.style.width = pct + '%';
+  if (containerId === 'enemyHearts') {
+    heart.style.left = (100 - pct) + '%';
+  } else {
+    heart.style.left = pct + '%';
+  }
+}
+
 function updateUI(playerHP, enemyHP, turn, usedCards) {
-  $('playerHP').textContent = playerHP;
-  $('enemyHP').textContent = enemyHP;
-  $('playerHealthBar').style.width = playerHP + '%';
-  $('enemyHealthBar').style.width = enemyHP + '%';
+  updateHearts('playerHearts', playerHP);
+  updateHearts('enemyHearts', enemyHP);
   $('turnCount').textContent = turn;
   $('currentTurn').textContent = turn;
   $('cardsLeft').textContent = 5 - usedCards.length;
 }
+
+let cardsDealt = false;
 
 function renderCards(game) {
   const container = $('cards');
@@ -27,8 +40,12 @@ function renderCards(game) {
     if (!c.isHeal) cls.push('attack');
     if (isUsed) cls.push('used');
     if (game.isProcessing) cls.push('disabled');
-    if (isBonusCard) cls.push('bonus-match');
+    if (isBonusCard) {
+      cls.push('bonus-match');
+      if (game.turn >= 2) cls.push(`turn-${game.turn}`);
+    }
     if (c.isHeal) cls.push('heal');
+    if (cardsDealt) cls.push('dealt');
 
     return `
       <div class="${cls.join(' ')}" onclick="playCard('${c.id}')" data-id="${c.id}">
@@ -41,6 +58,17 @@ function renderCards(game) {
         }
       </div>`;
   }).join('');
+}
+
+function dealCards() {
+  cardsDealt = false;
+  const cards = $('cards').querySelectorAll('.card');
+  cards.forEach((card, i) => {
+    setTimeout(() => {
+      card.classList.add('dealt');
+    }, i * 150);
+  });
+  setTimeout(() => { cardsDealt = true; }, cards.length * 150);
 }
 
 function shake(el) {
@@ -94,6 +122,8 @@ class FrameAnimator {
     this.onceResolve = null;  // resolve callback for playOnce
     this.ready = false;
     this.sized = false;
+    this.loopPause = 0;       // ms to pause between loop cycles
+    this._pauseUntil = 0;
   }
 
   // Pre-decode all frames → ImageBitmap (runs once at startup)
@@ -120,6 +150,23 @@ class FrameAnimator {
     });
   }
 
+  // Bake drawFilter into bitmaps so runtime draws need no ctx.filter
+  async bakeFilter() {
+    if (!this.drawFilter || !this.ready) return;
+    const c = document.createElement('canvas');
+    c.width = this.canvas.width;
+    c.height = this.canvas.height;
+    const ctx = c.getContext('2d');
+    ctx.filter = this.drawFilter;
+    for (let i = 0; i < this.bitmaps.length; i++) {
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.drawImage(this.bitmaps[i], 0, 0);
+      this.bitmaps[i].close();
+      this.bitmaps[i] = await createImageBitmap(c);
+    }
+    this.drawFilter = null;
+  }
+
   // Called by the global loop every frame
   tick(timestamp) {
     if (!this.ready) return;
@@ -133,8 +180,10 @@ class FrameAnimator {
     const delta = timestamp - this.lastTime;
     if (delta < this.interval) return;
 
+    // Advance by multiple frames if FPS > display refresh rate
+    const steps = Math.floor(delta / this.interval);
     this.lastTime = timestamp - (delta % this.interval);
-    this.current += this.direction;
+    this.current += this.direction * steps;
 
     if (this.mode === 'pingpong') {
       if (this.current >= this.bitmaps.length - 1) {
@@ -182,25 +231,41 @@ class FrameAnimator {
       }
     } else {
       // loop
-      this.current %= this.bitmaps.length;
+      if (this.current >= this.bitmaps.length) {
+        if (this.loopPause > 0) {
+          if (!this._pauseUntil) {
+            this.current = this.bitmaps.length - 1;
+            this._pauseUntil = timestamp + this.loopPause;
+            return;
+          } else if (timestamp < this._pauseUntil) {
+            this.current = this.bitmaps.length - 1;
+            return;
+          } else {
+            this._pauseUntil = 0;
+            this.current = 0;
+          }
+        } else {
+          this.current %= this.bitmaps.length;
+        }
+      }
     }
 
     this._draw();
   }
 
   _draw() {
-    const bmp = this.bitmaps[this.current];
-    if (!bmp) return;
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.drawImage(bmp, 0, 0);
+    this._drawFrame(this.current);
   }
 
   _drawFrame(index) {
     if (!this.ready) return;
     const bmp = this.bitmaps[index];
     if (!bmp) return;
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.drawImage(bmp, 0, 0);
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    if (this.drawFilter) ctx.filter = this.drawFilter;
+    ctx.drawImage(bmp, 0, 0);
+    if (this.drawFilter) ctx.filter = 'none';
   }
 
   startLoop() {
@@ -277,33 +342,66 @@ class FrameAnimator {
 // Create animators
 // ============================================================
 const bgAnim          = new FrameAnimator($('bgCanvas'),   'assets/frames/bg',           59,  24);
+bgAnim.drawFilter = 'brightness(0.8) contrast(1.2)';
 const userDefaultAnim = new FrameAnimator($('userCanvas'),  'assets/frames/user-default',  68,  30);
-const userAttackAnim  = new FrameAnimator($('userCanvas'),  'assets/frames/user-attack',   75,  36);
-const userAttackRevAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-attack-reverse', 22, 36);
-const userDefenseAnim = new FrameAnimator($('userCanvas'),  'assets/frames/user-defense',  75,  30);
+userDefaultAnim.loopPause = 64;
+const userAttackAnim  = new FrameAnimator($('userCanvas'),  'assets/frames/user-attack',   75,  40);
+const userAttackRevAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-attack-reverse', 22, 40);
+const userDefenseAnim = new FrameAnimator($('userCanvas'),  'assets/frames/user-defense',  75,  40);
 const botDefaultAnim  = new FrameAnimator($('botCanvas'),   'assets/frames/bot-default',   75,  30);
-const botAttackAnim   = new FrameAnimator($('botCanvas'),   'assets/frames/bot-attack',   104,  42);
-const botDefenseAnim  = new FrameAnimator($('botCanvas'),   'assets/frames/bot-defense',   75,  30);
-const userRockAttackAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-rock-attack', 51, 36);
+const botAttackAnim   = new FrameAnimator($('botCanvas'),   'assets/frames/bot-attack',   104,  40);
+const botDefenseAnim  = new FrameAnimator($('botCanvas'),   'assets/frames/bot-defense',   75,  48);
+const userRockAttackAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-rock-attack', 51, 40);
+const lightningAnim = new FrameAnimator($('lightningCanvas'), 'assets/frames/lightning', 51, 40);
+const userHealAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-heal', 75, 100);
 
 // Preload all frames with progress tracking
-const allAnimators = [bgAnim, userDefaultAnim, userAttackAnim, userAttackRevAnim, userDefenseAnim, botDefaultAnim, botAttackAnim, botDefenseAnim, userRockAttackAnim];
+const allAnimators = [bgAnim, userDefaultAnim, userAttackAnim, userAttackRevAnim, userDefenseAnim, botDefaultAnim, botAttackAnim, botDefenseAnim, userRockAttackAnim, lightningAnim, userHealAnim];
 const totalFrames = allAnimators.reduce((sum, a) => sum + a.count, 0);
 let loadedFrames = 0;
 
 const loadingBar = $('loadingBar');
-const loadingPercent = $('loadingPercent');
+const loadingFill = document.createElement('div');
+loadingFill.className = 'loading-bar-fill';
+loadingBar.appendChild(loadingFill);
 
 function onFrameLoaded() {
   loadedFrames++;
-  const pct = Math.round((loadedFrames / totalFrames) * 100);
-  loadingBar.style.width = pct + '%';
-  loadingPercent.textContent = pct + '%';
+  const pct = (loadedFrames / totalFrames) * 100;
+  loadingFill.style.width = `${pct}%`;
+}
+
+// Shift blue/cyan pixels → bubblegum pink in heal bitmaps
+async function bakeHealPink(anim) {
+  if (!anim.ready) return;
+  const c = document.createElement('canvas');
+  c.width = anim.canvas.width;
+  c.height = anim.canvas.height;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  for (let i = 0; i < anim.bitmaps.length; i++) {
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.drawImage(anim.bitmaps[i], 0, 0);
+    const img = ctx.getImageData(0, 0, c.width, c.height);
+    const d = img.data;
+    for (let p = 0; p < d.length; p += 4) {
+      const r = d[p], g = d[p+1], b = d[p+2];
+      // Detect blue/cyan dominant pixels
+      if (b > 80 && b > r * 1.2 && (b > g * 1.1 || (g > 100 && b > 80))) {
+        // Shift to bubblegum pink: swap blue→red channel, reduce green
+        d[p]   = Math.min(255, b + 40);           // R ← strong pink
+        d[p+1] = Math.min(255, Math.floor(g * 0.5)); // G ← muted
+        d[p+2] = Math.min(255, Math.floor(b * 0.7)); // B ← reduced
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    anim.bitmaps[i].close();
+    anim.bitmaps[i] = await createImageBitmap(c);
+  }
 }
 
 const allPreloaded = Promise.all(
   allAnimators.map(a => a.preload(onFrameLoaded))
-).then(() => {
+).then(() => Promise.all([bgAnim.bakeFilter(), bakeHealPink(userHealAnim)])).then(() => {
   const screen = $('loadingScreen');
   screen.classList.add('fade-out');
   setTimeout(() => screen.remove(), 500);
@@ -321,20 +419,23 @@ function startIdleAnimations() {
 
 function blinkDamage(canvas) {
   return new Promise(resolve => {
-    canvas.classList.add('damage-blink');
-    canvas.addEventListener('animationend', () => {
-      canvas.classList.remove('damage-blink');
+    canvas.style.animation = 'hitFlash 0.72s steps(1)';
+    function onEnd(e) {
+      if (e.animationName !== 'hitFlash') return;
+      canvas.removeEventListener('animationend', onEnd);
+      canvas.style.animation = '';
       resolve();
-    }, { once: true });
+    }
+    canvas.addEventListener('animationend', onEnd);
   });
 }
 
 function arenaShake() {
   const arena = document.querySelector('.arena');
   arena.classList.add('arena-shake');
-  arena.addEventListener('animationend', () => {
-    arena.classList.remove('arena-shake');
-  }, { once: true });
+  // Use setTimeout (2.02s matches CSS duration) — animationend would
+  // fire early from child animations bubbling up (e.g. hitFlash)
+  setTimeout(() => arena.classList.remove('arena-shake'), 2020);
 }
 
 function arenaLightning() {
@@ -349,15 +450,26 @@ function arenaLightning() {
 
 // Player attacks (forward + reverse sprite) + bot defends
 // isBonus = true → use rock attack sprite, no arena shake
-function playPlayerAttack(killingBlow, isBonus) {
+function playPlayerAttack(killingBlow, isBonus, onHit) {
   return new Promise(async resolve => {
     userDefaultAnim.stop();
 
     let attack;
     if (isBonus) {
-      // Rock Invocation — play rock sprite + lightning storm
+      // Rock Invocation — play rock sprite + lightning bolt sprite
       setTimeout(arenaLightning, 300);
-      attack = userRockAttackAnim.playOnce();
+      const lc = $('lightningCanvas');
+      lc.style.display = 'block';
+      attack = (async () => {
+        await Promise.all([
+          userRockAttackAnim.playOnce(),
+          (async () => {
+            await delay(200);
+            await lightningAnim.playOnce();
+          })()
+        ]);
+        lc.style.display = 'none';
+      })();
     } else {
       // Normal attack — regular sprite + arena shake
       setTimeout(arenaShake, 750);
@@ -373,6 +485,7 @@ function playPlayerAttack(killingBlow, isBonus) {
       botDefaultAnim.stop();
       botDefenseAnim._drawFrame(0);
       await blinkDamage($('botCanvas'));
+      if (onHit) onHit();
       if (killingBlow) {
         $('botCanvas').classList.add('defeated');
       } else {
@@ -388,18 +501,19 @@ function playPlayerAttack(killingBlow, isBonus) {
 }
 
 // Bot attacks (z-front) → 1s later player defends
-function playEnemyAttack(killingBlow) {
+function playEnemyAttack(killingBlow, onHit) {
   const botCanvas = $('botCanvas');
   return new Promise(async resolve => {
-    botCanvas.classList.add('z-front', 'bot-attack-dip');
+    botCanvas.classList.add('z-front');
     botDefaultAnim.stop();
     const attack = botAttackAnim.playOnce();
 
     const defense = (async () => {
-      await delay(1700);
+      await delay(1400);
       userDefaultAnim.stop();
       userDefenseAnim._drawFrame(0);
       await blinkDamage($('userCanvas'));
+      if (onHit) onHit();
       if (killingBlow) {
         $('userCanvas').classList.add('defeated');
       } else {
@@ -408,11 +522,26 @@ function playEnemyAttack(killingBlow) {
     })();
 
     await Promise.all([attack, defense]);
-    botCanvas.classList.remove('z-front', 'bot-attack-dip');
+    botCanvas.classList.remove('z-front');
     botDefaultAnim.startLoop();
     if (!killingBlow) userDefaultAnim.startLoop();
     resolve();
   });
+}
+
+// Player heal — bubble animation + shield glow
+function playHealAnimation() {
+  return new Promise(async resolve => {
+    userDefaultAnim.stop();
+    await userHealAnim.playOnce();
+    $('userCanvas').classList.add('shield-glow');
+    userDefaultAnim.startLoop();
+    resolve();
+  });
+}
+
+function removeShieldGlow() {
+  $('userCanvas').classList.remove('shield-glow');
 }
 
 function delay(ms) {

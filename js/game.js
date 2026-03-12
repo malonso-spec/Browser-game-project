@@ -30,12 +30,28 @@ function init() {
   $('enemyState').textContent = 'Estado: ' + game.enemyState;
   $('stateHint').textContent = game.enemyState;
   $('result').classList.add('hidden');
-  $('botCanvas').classList.remove('defeated');
-  $('userCanvas').classList.remove('defeated');
+  // Clean up any mid-flight animation state
+  const botCanvas = $('botCanvas');
+  const userCanvas = $('userCanvas');
+  botCanvas.classList.remove('defeated', 'z-front');
+  botCanvas.style.animation = '';
+  userCanvas.classList.remove('defeated', 'shield-glow');
+  userCanvas.style.animation = '';
+  // Stop all combat animators so they don't draw over idle sprites
+  userAttackAnim.stop();
+  userAttackRevAnim.stop();
+  userRockAttackAnim.stop();
+  lightningAnim.stop();
+  $('lightningCanvas').style.display = 'none';
+  userHealAnim.stop();
+  botAttackAnim.stop();
+  botDefenseAnim.stop();
+  userDefenseAnim.stop();
   $('bonusIndicator').className = 'bonus-indicator bonus-available';
   $('bonusIndicator').textContent = '⚡ Bonus: T1 +10p | T2 +20p | T3 +30p';
 
   renderCards(game);
+  dealCards();
   startIdleAnimations();
 }
 
@@ -69,10 +85,16 @@ async function playCard(id) {
 
     game.enemyHP = Math.max(0, game.enemyHP - dmg);
     shake($('enemyFighter'));
-    await playPlayerAttack(game.enemyHP <= 0, isBonus);
+    await playPlayerAttack(game.enemyHP <= 0, isBonus, () => {
+      updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
+    });
   }
 
-  updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
+  // Heal path — play bubble animation then update UI
+  if (card.isHeal) {
+    await playHealAnimation();
+    updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
+  }
 
   // --- Check enemy defeated ---
   if (game.enemyHP <= 0) {
@@ -101,12 +123,13 @@ async function playCard(id) {
     enemyDmg = ENEMY_DMG;
   }
 
-  const willKillPlayer = game.playerHP - enemyDmg <= 0;
-  await playEnemyAttack(willKillPlayer);
-
   game.playerHP = Math.max(0, game.playerHP - enemyDmg);
-  shake($('playerFighter'));
-  updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
+  const willKillPlayer = game.playerHP <= 0;
+  await playEnemyAttack(willKillPlayer, () => {
+    removeShieldGlow();
+    shake($('playerFighter'));
+    updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
+  });
 
   // --- Check player defeated ---
   if (game.playerHP <= 0) {
@@ -117,6 +140,19 @@ async function playCard(id) {
 
   // --- Next turn ---
   game.turn++;
+
+  // Disable Rock Invocation after turn 3, reactivate a random used card
+  const bonusCardId = STATE_CARD_MAP[game.enemyState];
+  if (game.turn > 3 && !game.usedCards.includes(bonusCardId)) {
+    game.usedCards.push(bonusCardId);
+    // Reactivate a random previously used card (not the bonus card)
+    const reactivatable = game.usedCards.filter(id => id !== bonusCardId);
+    if (reactivatable.length > 0) {
+      const pick = reactivatable[Math.floor(Math.random() * reactivatable.length)];
+      game.usedCards = game.usedCards.filter(id => id !== pick);
+    }
+  }
+
   if (game.turn > 5) {
     endGame(false, 'Se acabaron los turnos y el enemigo sigue vivo.');
     return;

@@ -3,9 +3,9 @@ const STATES = ['Eufórico', 'Ebrio', 'Agobiado', 'Empanado'];
 
 const STATE_CARD_MAP = {
   'Eufórico': 'A',
-  'Ebrio': 'B',
-  'Agobiado': 'C',
-  'Empanado': 'D'
+  'Ebrio': 'A',
+  'Agobiado': 'A',
+  'Empanado': 'A'
 };
 
 const CARDS = [

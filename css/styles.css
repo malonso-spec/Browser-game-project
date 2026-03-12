@@ -30,13 +30,26 @@ h1 {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: #0e0e0e;
+  background: #000;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 20px;
+  overflow: hidden;
   transition: opacity 0.5s ease;
+}
+.loading-screen::before {
+  content: '';
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 500px;
+  height: 350px;
+  background: url('../assets/loading-character.png') center / contain no-repeat;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .loading-screen.fade-out {
@@ -44,65 +57,65 @@ h1 {
   pointer-events: none;
 }
 
-.loading-text {
-  color: #94a3b8;
-  font-size: 0.9rem;
+.loading-title {
+  display: none;
 }
 
 .loading-bar-track {
-  width: 280px;
-  height: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+  width: 300px;
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
+  z-index: 2;
   overflow: hidden;
 }
-
 .loading-bar-fill {
-  height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #fbbf24, #f59e0b);
-  border-radius: 6px;
+  height: 100%;
+  background: #fff;
+  border-radius: 4px;
   transition: width 0.15s ease;
 }
 
-.loading-percent {
-  color: #fbbf24;
-  font-size: 0.8rem;
-  font-weight: bold;
-}
-
-/* Game info */
-.game-info {
-  display: flex;
-  gap: 20px;
+/* Screen housing — festival LED truss frame */
+.screen-housing {
+  position: relative;
+  width: 100%;
+  max-width: 1040px;
   margin-bottom: 10px;
-  font-size: 0.85rem;
-  color: #94a3b8;
+  padding: 12px;
+  border: 2px solid #444;
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -1px 0 rgba(255,255,255,0.04),
+    0 8px 30px rgba(0, 0, 0, 0.7),
+    0 0 60px rgba(20, 80, 200, 0.08);
+  /* Metallic truss texture */
+  background:
+    repeating-linear-gradient(
+      45deg, transparent 0px, transparent 8px,
+      rgba(255,255,255,0.02) 8px, rgba(255,255,255,0.02) 9px
+    ),
+    repeating-linear-gradient(
+      -45deg, transparent 0px, transparent 8px,
+      rgba(255,255,255,0.02) 8px, rgba(255,255,255,0.02) 9px
+    ),
+    linear-gradient(180deg, #3a3a3a 0%, #1e1e1e 35%, #111 65%, #1e1e1e 100%);
 }
 
-.game-info span {
-  background: rgba(0, 0, 0, 0.3);
-  padding: 4px 12px;
-  border-radius: 20px;
-}
 
-/* Arena — concert screen frame */
+/* Arena — screen panel inside housing */
 .arena {
   position: relative;
   width: 100%;
-  max-width: 1000px;
   aspect-ratio: 16/9;
-  border-radius: 8px;
-  margin-bottom: 15px;
   overflow: hidden;
   background: #000;
-  border: 6px solid #2a2a2a;
+  border: 3px solid #0a0a0a;
   box-shadow:
-    inset 0 0 30px rgba(0, 0, 0, 0.5),
-    0 0 0 2px #111,
-    0 0 0 8px #1a1a1a,
-    0 0 0 10px #333,
-    0 4px 20px rgba(0, 0, 0, 0.6);
+    inset 0 0 30px rgba(0, 0, 0, 0.6),
+    0 0 0 1px #333;
 }
 
 .arena-bg {
@@ -113,7 +126,6 @@ h1 {
   height: 100%;
   object-fit: cover;
   z-index: 0;
-  filter: brightness(0.8);
 }
 
 
@@ -124,53 +136,47 @@ h1 {
   height: 100%;
   width: auto;
   z-index: 1;
+  will-change: transform, opacity;
 }
 
 .sprite-left {
-  left: 1%;
+  left: 4%;
   z-index: 2;
 }
 
 .sprite-right {
-  right: 5%;
+  right: 1%;
   bottom: 3%;
-  z-index: 1;
 }
 
 .sprite-right.z-front {
   z-index: 3;
 }
 
-/* Bot attack dip — moves bot down around frame 52, returns by end */
-.bot-attack-dip {
-  animation: botAttackDip 2.48s linear;
+/* Lightning bolt sprite — overlaid on bot during Rock Invocation */
+.arena-lightning-sprite {
+  position: absolute;
+  right: -5%;
+  bottom: 0;
+  height: 100%;
+  width: auto;
+  z-index: 4;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  display: none;
 }
 
-@keyframes botAttackDip {
-  0%   { transform: translateY(0); }
-  31%  { transform: translateY(0); }
-  40%  { transform: translateY(-16px); }
-  45%  { transform: translateY(-16px); }
-  50%  { transform: translateY(24px); }
-  60%  { transform: translateY(24px); }
-  77%  { transform: translateY(0); }
-  100% { transform: translateY(0); }
-}
 
-/* Damage blink effect */
-.damage-blink {
-  animation: damageBlink 0.48s steps(1);
-}
-
-@keyframes damageBlink {
-  0%   { filter: brightness(1); }
-  10%  { filter: brightness(0.3); }
-  25%  { filter: brightness(1); }
-  35%  { filter: brightness(0.3); }
-  50%  { filter: brightness(1); }
-  60%  { filter: brightness(0.3); }
-  75%  { filter: brightness(1); }
-  100% { filter: brightness(1); }
+/* Hit flash — slow blink on damage (applied via inline style.animation) */
+@keyframes hitFlash {
+  0%   { opacity: 1; }
+  12%  { opacity: 0; }
+  28%  { opacity: 1; }
+  42%  { opacity: 0; }
+  58%  { opacity: 1; }
+  72%  { opacity: 0; }
+  88%  { opacity: 1; }
+  100% { opacity: 1; }
 }
 
 /* Lightning storm effect — bright flashes over the arena */
@@ -215,6 +221,13 @@ h1 {
 .defeated {
   filter: grayscale(1) brightness(0.6);
   transition: filter 0.5s ease;
+}
+
+/* Shield glow — bright outline on MC after heal */
+.shield-glow {
+  filter: drop-shadow(0 0 6px rgba(255, 182, 193, 0.9))
+          drop-shadow(0 0 14px rgba(255, 182, 193, 0.5));
+  transition: filter 0.3s ease;
 }
 
 /* Arena tremor effect — shakes content only, not the frame */
@@ -276,27 +289,6 @@ h1 {
   100% { transform: translate(0, 0); }
 }
 
-/* Frame counters (debug) */
-.frame-counter {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.6);
-  color: #fff;
-  font-family: monospace;
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.frame-counter-left {
-  left: 12px;
-  transform: none;
-}
-
 /* Fighters */
 .fighter {
   position: absolute;
@@ -308,12 +300,12 @@ h1 {
 }
 
 .fighter.player-side {
-  bottom: 15px;
+  top: 12px;
   left: 15px;
 }
 
 .fighter.enemy-side {
-  bottom: 15px;
+  top: 12px;
   right: 15px;
 }
 
@@ -327,72 +319,56 @@ h1 {
   75% { transform: translateX(8px); }
 }
 
-/* Health bars */
-.health-bar {
-  width: 110px;
-  height: 14px;
-  background: rgba(0, 0, 0, 0.7);
-  border-radius: 8px;
+/* HP Bar */
+.hp-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 120px;
+}
+
+.hp-bar-track {
+  width: 100%;
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
   overflow: hidden;
-  border: 2px solid #555;
 }
 
-.health-fill {
+.hp-bar-fill {
   height: 100%;
+  background: #00E5FF;
+  border-radius: 4px;
   transition: width 0.4s ease;
-  border-radius: 6px;
 }
 
-.player-health {
-  background: linear-gradient(90deg, #00d9ff, #0077ff);
+.enemy-side .hp-bar-fill {
+  margin-left: auto;
 }
 
-.enemy-health {
-  background: linear-gradient(90deg, #ff4757, #ff6b81);
-}
-
-.health-text {
-  font-size: 0.8rem;
-  font-weight: bold;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+.hp-heart {
+  position: absolute;
+  left: 100%;
+  font-size: 1rem;
+  color: #fbfbfb;
+  transition: left 0.4s ease;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+  pointer-events: none;
 }
 
 /* Enemy state */
 .enemy-state {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #78350f;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: bold;
-  box-shadow: 0 2px 10px rgba(251, 191, 36, 0.4);
-  z-index: 2;
+  display: none;
 }
 
 .turn-info {
-  position: absolute;
-  top: 10px;
-  left: 15px;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  z-index: 2;
+  display: none;
 }
 
 /* Bonus indicator */
 .bonus-indicator {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.75rem;
-  padding: 4px 12px;
-  border-radius: 12px;
-  z-index: 2;
+  display: none;
 }
 
 .bonus-available {
@@ -419,22 +395,24 @@ h1 {
   gap: 10px;
   flex-wrap: wrap;
   justify-content: center;
-  max-width: 620px;
+  max-width: 920px;
+  margin-top: -60px;
   margin-bottom: 12px;
-  background: rgba(14, 14, 14, 0.85);
   padding: 16px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+  z-index: 5;
 }
 
 .card {
-  width: 100px;
-  height: 140px;
+  width: 145px;
+  height: 203px;
   background: linear-gradient(145deg, #2d3748, #1a202c);
-  border: 3px solid #4a5568;
+  border: 3px solid #111;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+  opacity: 0;
+  transform: translateY(40px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -445,7 +423,7 @@ h1 {
 
 .card.attack {
   background: url('../assets/cards/attack.png') center/cover no-repeat;
-  border-color: #ff6b35;
+  border-color: #111;
 }
 
 .card:hover:not(.used):not(.disabled) {
@@ -454,42 +432,37 @@ h1 {
 }
 
 .card.bonus-match {
-  background: url('../assets/cards/bonus.png') center/cover no-repeat;
+  background: url('../assets/cards/rock-10.png') center/cover no-repeat;
+}
+.card.bonus-match.turn-2 {
+  background: url('../assets/cards/rock-20.png') center/cover no-repeat;
+}
+.card.bonus-match.turn-3 {
+  background: url('../assets/cards/rock-30.png') center/cover no-repeat;
 }
 
 .card.bonus-match:not(.used):not(.disabled) {
-  border-color: #fbbf24;
-  box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
 }
 
 .card.attack.bonus-match:not(.used):not(.disabled) {
-  border-color: #fbbf24;
-  box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+}
+
+.card.dealt {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .card.used {
-  opacity: 0.25;
+  filter: grayscale(1) brightness(0.6);
   cursor: not-allowed;
   transform: scale(0.92);
 }
 
 .card.disabled {
-  opacity: 0.5;
+  filter: grayscale(1) brightness(0.7);
   cursor: not-allowed;
-}
-
-.card-letter {
-  position: absolute;
-  top: 6px;
-  left: 8px;
-  font-size: 0.7rem;
-  font-weight: bold;
-  color: #64748b;
-}
-
-.card.attack .card-letter {
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
 .card-icon {
@@ -534,8 +507,14 @@ h1 {
   display: none;
 }
 
-.card.heal .card-damage strong {
-  color: #10b981;
+.card.heal {
+  background: url('../assets/cards/Protection.png') center/cover no-repeat;
+}
+
+.card.heal .card-icon,
+.card.heal .card-name,
+.card.heal .card-damage {
+  display: none;
 }
 
 /* Result overlay */
@@ -589,22 +568,9 @@ h1 {
   display: none;
 }
 
-/* Hints */
+/* Hints — hidden */
 .hint {
-  font-size: 0.7rem;
-  color: #64748b;
-  text-align: center;
-  margin-top: 8px;
-  max-width: 400px;
-}
-
-.state-hint {
-  display: inline-block;
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-left: 4px;
+  display: none;
 }
 
 /* Critical hit alert */
