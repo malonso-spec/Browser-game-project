@@ -80,7 +80,7 @@ function shake(el) {
 function showCritAlert() {
   const el = $('critAlert');
   el.classList.remove('hidden');
-  setTimeout(() => el.classList.add('hidden'), 600);
+  setTimeout(() => el.classList.add('hidden'), 1200);
 }
 
 function showResult(win, reason) {

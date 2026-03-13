@@ -57,7 +57,7 @@ function init() {
 
 async function playCard(id) {
   if (game.usedCards.includes(id) || game.isProcessing) return;
-  if (game.enemyHP <= 0 || game.playerHP <= 0 || game.turn > 5) return;
+  if (game.enemyHP <= 0 || game.playerHP <= 0) return;
 
   game.isProcessing = true;
   game.usedCards.push(id);
@@ -118,14 +118,15 @@ async function playCard(id) {
   } else if (!game.enemyCritUsed && Math.random() < CRIT_CHANCE) {
     enemyDmg = ENEMY_CRIT_DMG;
     game.enemyCritUsed = true;
-    showCritAlert();
   } else {
     enemyDmg = ENEMY_DMG;
   }
 
   game.playerHP = Math.max(0, game.playerHP - enemyDmg);
   const willKillPlayer = game.playerHP <= 0;
+  const isCrit = enemyDmg === ENEMY_CRIT_DMG;
   await playEnemyAttack(willKillPlayer, () => {
+    if (isCrit) showCritAlert();
     removeShieldGlow();
     shake($('playerFighter'));
     updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
@@ -153,9 +154,16 @@ async function playCard(id) {
     }
   }
 
-  if (game.turn > 5) {
-    endGame(false, 'Se acabaron los turnos y el enemigo sigue vivo.');
-    return;
+  // If all cards are used, re-enable a random one (not Recuperación nor bonus card)
+  const allCardIds = CARDS.map(c => c.id);
+  const availableCards = allCardIds.filter(id => !game.usedCards.includes(id));
+  if (availableCards.length === 0) {
+    const bonusCardId2 = STATE_CARD_MAP[game.enemyState];
+    const reactivatable2 = game.usedCards.filter(id => id !== 'R' && id !== bonusCardId2);
+    if (reactivatable2.length > 0) {
+      const pick2 = reactivatable2[Math.floor(Math.random() * reactivatable2.length)];
+      game.usedCards = game.usedCards.filter(id => id !== pick2);
+    }
   }
 
   updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
