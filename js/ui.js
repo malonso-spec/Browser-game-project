@@ -377,7 +377,7 @@ bgAnim.drawFilter = 'brightness(0.8) contrast(1.2)';
 const userDefaultAnim = new FrameAnimator($('userCanvas'),  'assets/frames/user-default',  68,  30);
 userDefaultAnim.loopPause = 64;
 const userAttackAnim  = new FrameAnimator($('userCanvas'),  'assets/frames/user-attack',   75,  40);
-const attackSfx = () => { const s = new Audio('assets/attack.mp3'); s.volume = 0.5; s.play().catch(() => {}); };
+const attackSfx = () => { const s = new Audio('assets/attack.mp3'); s.volume = 0.25; s.play().catch(() => {}); };
 userAttackAnim.frameTriggers = new Map([[23, attackSfx], [71, attackSfx]]);
 const userAttackRevAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-attack-reverse', 22, 40);
 const userDefenseAnim = new FrameAnimator($('userCanvas'),  'assets/frames/user-defense',  75,  40);
@@ -410,6 +410,17 @@ const allPreloaded = Promise.all(
   const screen = $('loadingScreen');
   screen.classList.add('fade-out');
   setTimeout(() => screen.remove(), 500);
+
+  // Background music — very low volume, looped
+  const bgMusic = new Audio('assets/music.mp3');
+  bgMusic.loop = true;
+  bgMusic.volume = 0.02;
+  bgMusic.play().catch(() => {
+    // Autoplay blocked — start on first user click
+    const resume = () => { bgMusic.play().catch(() => {}); document.removeEventListener('click', resume); };
+    document.addEventListener('click', resume);
+  });
+  window._bgMusic = bgMusic;
 });
 
 function startIdleAnimations() {
@@ -472,7 +483,7 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
           (async () => {
             await delay(200);
             const rockSfx = new Audio('assets/rock-invocation.mp3');
-            rockSfx.volume = 0.5;
+            rockSfx.volume = 0.25;
             rockSfx.play().catch(() => {});
             await lightningAnim.playOnce();
           })()
@@ -545,7 +556,7 @@ function playHealAnimation() {
     canvas.classList.add('z-front');
     userDefaultAnim.stop();
     const bubbleSfx = new Audio('assets/Burbuja.mp3');
-    bubbleSfx.volume = 0.5;
+    bubbleSfx.volume = 0.25;
     bubbleSfx.play().catch(() => {});
     await userHealAnim.playOnce();
     canvas.classList.remove('z-front');
