@@ -522,7 +522,7 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
       })();
     }
 
-    const defenseDelay = isBonus ? 800 : 1050;
+    const defenseDelay = isBonus ? 550 : 750;
     const defense = (async () => {
       await delay(defenseDelay);
       botDefaultAnim.stop();
@@ -560,7 +560,7 @@ function playEnemyAttack(killingBlow, onHit) {
     const attack = botAttackAnim.playOnce();
 
     const defense = (async () => {
-      await delay(1400);
+      await delay(1050);
       userDefaultAnim.stop();
       userDefenseAnim._drawFrame(0);
       setTimeout(() => playSfx('assets/mc-defense.mp3', 0.25, 1.5), 200);
