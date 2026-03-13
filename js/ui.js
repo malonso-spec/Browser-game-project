@@ -4,6 +4,20 @@
 
 const $ = id => document.getElementById(id);
 
+// --- Global mute ---
+let _muted = false;
+function playSfx(src, volume = 0.25) {
+  if (_muted) return;
+  const s = new Audio(src);
+  s.volume = volume;
+  s.play().catch(() => {});
+}
+$('muteBtn').addEventListener('click', () => {
+  _muted = !_muted;
+  $('muteBtn').textContent = _muted ? '🔇' : '🔊';
+  if (window._bgMusic) window._bgMusic.muted = _muted;
+});
+
 // --- UI updates ---
 function updateHearts(containerId, hp) {
   const container = $(containerId);
@@ -80,16 +94,22 @@ function shake(el) {
 function showCritAlert() {
   const el = $('critAlert');
   el.classList.remove('hidden');
+  playSfx('assets/Heavy.mp3');
   setTimeout(() => el.classList.add('hidden'), 1200);
 }
 
 function showResult(win, reason) {
-  const el = $('result');
-  el.classList.remove('hidden', 'win', 'lose');
-  el.classList.add(win ? 'win' : 'lose');
-  const img = win ? 'assets/you-win.png' : 'assets/you-lose.png';
-  $('resultText').innerHTML = `<img src="${img}" alt="${win ? 'You Win!' : 'You Lose!'}" class="result-lettering">`;
-  $('resultDesc').textContent = '';
+  if (win) playSfx('assets/you-win.mp3');
+  else playSfx('assets/you-lose.mp3', 0.4);
+  const showDelay = win ? 400 : 700;
+  setTimeout(() => {
+    const el = $('result');
+    el.classList.remove('hidden', 'win', 'lose');
+    el.classList.add(win ? 'win' : 'lose');
+    const img = win ? 'assets/you-win.png' : 'assets/you-lose.png';
+    $('resultText').innerHTML = `<img src="${img}" alt="${win ? 'You Win!' : 'You Lose!'}" class="result-lettering">`;
+    $('resultDesc').textContent = '';
+  }, showDelay);
 }
 
 // ============================================================
@@ -377,7 +397,7 @@ bgAnim.drawFilter = 'brightness(0.8) contrast(1.2)';
 const userDefaultAnim = new FrameAnimator($('userCanvas'),  'assets/frames/user-default',  68,  30);
 userDefaultAnim.loopPause = 64;
 const userAttackAnim  = new FrameAnimator($('userCanvas'),  'assets/frames/user-attack',   75,  40);
-const attackSfx = () => { const s = new Audio('assets/attack.mp3'); s.volume = 0.25; s.play().catch(() => {}); };
+const attackSfx = () => playSfx('assets/attack.mp3');
 userAttackAnim.frameTriggers = new Map([[23, attackSfx], [71, attackSfx]]);
 const userAttackRevAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-attack-reverse', 22, 40);
 const userDefenseAnim = new FrameAnimator($('userCanvas'),  'assets/frames/user-defense',  75,  40);
@@ -482,9 +502,7 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
           userRockAttackAnim.playOnce(),
           (async () => {
             await delay(200);
-            const rockSfx = new Audio('assets/rock-invocation.mp3');
-            rockSfx.volume = 0.25;
-            rockSfx.play().catch(() => {});
+            playSfx('assets/rock-invocation.mp3');
             await lightningAnim.playOnce();
           })()
         ]);
@@ -526,6 +544,12 @@ function playEnemyAttack(killingBlow, onHit) {
   return new Promise(async resolve => {
     botCanvas.classList.add('z-front');
     botDefaultAnim.stop();
+    setTimeout(() => {
+      const beerSfx = new Audio('assets/beer-attack.mp3');
+      beerSfx.volume = 0.15;
+      beerSfx.playbackRate = 2.0;
+      beerSfx.play().catch(() => {});
+    }, 600);
     const attack = botAttackAnim.playOnce();
 
     const defense = (async () => {
@@ -555,9 +579,7 @@ function playHealAnimation() {
     const canvas = $('userCanvas');
     canvas.classList.add('z-front');
     userDefaultAnim.stop();
-    const bubbleSfx = new Audio('assets/Burbuja.mp3');
-    bubbleSfx.volume = 0.25;
-    bubbleSfx.play().catch(() => {});
+    playSfx('assets/Burbuja.mp3');
     await userHealAnim.playOnce();
     canvas.classList.remove('z-front');
     canvas.classList.add('shield-glow');

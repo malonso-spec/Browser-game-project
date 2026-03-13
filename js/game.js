@@ -98,7 +98,7 @@ async function playCard(id) {
 
   // --- Check enemy defeated ---
   if (game.enemyHP <= 0) {
-    await delay(1500);
+    await delay(800);
     endGame(game.bonusUsed, game.bonusUsed
       ? '¡Activaste el bonus y derrotaste al enemigo!'
       : 'Derrotaste al enemigo pero sin activar el bonus. ¡El bonus es obligatorio para ganar!');
@@ -134,7 +134,7 @@ async function playCard(id) {
 
   // --- Check player defeated ---
   if (game.playerHP <= 0) {
-    await delay(1500);
+    await delay(800);
     endGame(false, 'Tu vida llegó a 0%. ¡Intenta usar Recuperación estratégicamente!');
     return;
   }

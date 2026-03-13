@@ -16,8 +16,9 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 15px;
+  padding-top: 3dvh;
   color: #fff;
 }
 
@@ -81,10 +82,33 @@ h1 {
   transition: width 0.15s ease;
 }
 
+/* Mute button */
+.mute-btn {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+  background: rgba(30, 30, 30, 0.7);
+  border: 1px solid #444;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+}
+.mute-btn:hover {
+  background: rgba(60, 60, 60, 0.8);
+}
+
 /* Screen housing — festival LED truss frame */
 .screen-housing {
   position: relative;
-  width: min(92vw, 124dvh);
+  width: min(92vw, 110dvh);
   margin-bottom: 10px;
   padding: 12px;
   border: 2px solid #444;
@@ -399,17 +423,31 @@ h1 {
   gap: 10px;
   flex-wrap: wrap;
   justify-content: center;
-  max-width: min(88vw, 120dvh);
-  margin-top: -60px;
+  max-width: min(88vw, 106dvh);
+  margin-top: -50px;
   margin-bottom: 12px;
   padding: 16px;
   position: relative;
   z-index: 5;
 }
 
+.sponsor-logo {
+  display: flex;
+  justify-content: center;
+  margin-top: 6px;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 5;
+}
+.sponsor-logo img {
+  width: clamp(80px, 12dvh, 180px);
+  height: auto;
+  opacity: 1;
+}
+
 .card {
-  width: clamp(80px, 12dvh, 220px);
-  height: clamp(112px, 17dvh, 308px);
+  width: clamp(90px, 15dvh, 250px);
+  height: clamp(126px, 21dvh, 350px);
   background: linear-gradient(145deg, #2d3748, #1a202c);
   border: 3px solid #868686;
   border-radius: 2px;
