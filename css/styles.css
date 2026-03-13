@@ -83,7 +83,7 @@ h1 {
 .screen-housing {
   position: relative;
   width: 100%;
-  max-width: 1040px;
+  max-width: min(92vw, 135vh, 1400px);
   margin-bottom: 10px;
   padding: 12px;
   border: 2px solid #444;
@@ -327,12 +327,12 @@ h1 {
   position: relative;
   display: flex;
   align-items: center;
-  width: 120px;
+  width: clamp(100px, 10vw, 180px);
 }
 
 .hp-bar-track {
   width: 100%;
-  height: 8px;
+  height: clamp(6px, 0.6vw, 10px);
   background: #333;
   border-radius: 4px;
   overflow: hidden;
@@ -398,7 +398,7 @@ h1 {
   gap: 10px;
   flex-wrap: wrap;
   justify-content: center;
-  max-width: 920px;
+  max-width: min(88vw, 1360px);
   margin-top: -60px;
   margin-bottom: 12px;
   padding: 16px;
@@ -407,8 +407,8 @@ h1 {
 }
 
 .card {
-  width: 145px;
-  height: 203px;
+  width: clamp(100px, min(10vw, 15vh), 200px);
+  height: clamp(140px, min(14vw, 21vh), 280px);
   background: linear-gradient(145deg, #2d3748, #1a202c);
   border: 3px solid #868686;
   border-radius: 2px;
@@ -549,6 +549,12 @@ h1 {
 
 .result.win h2 { color: #10b981; }
 .result.lose h2 { color: #ff4757; }
+
+.result-lettering {
+  max-width: 400px;
+  width: 100%;
+  height: auto;
+}
 
 .btn {
   padding: 10px 25px;
