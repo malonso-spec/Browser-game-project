@@ -433,16 +433,17 @@ const allPreloaded = Promise.all(
   screen.classList.add('fade-out');
   setTimeout(() => screen.remove(), 500);
 
-  // Background music — very low volume, looped
-  const bgMusic = new Audio('assets/music.mp3');
-  bgMusic.loop = true;
-  bgMusic.volume = 0.02;
-  bgMusic.play().catch(() => {
-    // Autoplay blocked — start on first user click
-    const resume = () => { bgMusic.play().catch(() => {}); document.removeEventListener('click', resume); };
-    document.addEventListener('click', resume);
+  // Show intro overlay — wait for user to click "Ir a la batalla"
+  $('startBattleBtn').addEventListener('click', () => {
+    $('introOverlay').classList.add('hidden');
+
+    // Background music — very low volume, looped
+    const bgMusic = new Audio('assets/music.mp3');
+    bgMusic.loop = true;
+    bgMusic.volume = 0.02;
+    bgMusic.play().catch(() => {});
+    window._bgMusic = bgMusic;
   });
-  window._bgMusic = bgMusic;
 });
 
 function startIdleAnimations() {
@@ -456,13 +457,15 @@ function startIdleAnimations() {
 // Combat animations
 // ============================================================
 
-function blinkDamage(canvas) {
+function blinkDamage(canvas, lightning) {
+  const animName = lightning ? 'hitFlashLightning' : 'hitFlash';
   return new Promise(resolve => {
-    canvas.style.animation = 'hitFlash 0.72s steps(1)';
+    canvas.style.animation = `${animName} 0.72s steps(1)`;
     function onEnd(e) {
-      if (e.animationName !== 'hitFlash') return;
+      if (e.animationName !== animName) return;
       canvas.removeEventListener('animationend', onEnd);
       canvas.style.animation = '';
+      canvas.style.filter = '';
       resolve();
     }
     canvas.addEventListener('animationend', onEnd);
@@ -504,7 +507,7 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
           userRockAttackAnim.playOnce(),
           (async () => {
             await delay(200);
-            playSfx('assets/rock-invocation.mp3', 0.25, 1.5);
+            playSfx('assets/rock-invocation.mp3', 0.25, 2.0);
             await lightningAnim.playOnce();
           })()
         ]);
@@ -525,7 +528,7 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
       botDefaultAnim.stop();
       botDefenseAnim._drawFrame(0);
       setTimeout(() => playSfx('assets/defense-bot-blink.mp3', 0.15, 2.0), 200);
-      await blinkDamage($('botCanvas'));
+      await blinkDamage($('botCanvas'), isBonus);
       if (onHit) onHit();
       if (killingBlow) {
         $('botCanvas').classList.add('defeated');
@@ -560,6 +563,7 @@ function playEnemyAttack(killingBlow, onHit) {
       await delay(1400);
       userDefaultAnim.stop();
       userDefenseAnim._drawFrame(0);
+      setTimeout(() => playSfx('assets/mc-defense.mp3', 0.25, 1.5), 200);
       await blinkDamage($('userCanvas'));
       if (onHit) onHit();
       if (killingBlow) {
