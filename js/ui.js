@@ -6,10 +6,11 @@ const $ = id => document.getElementById(id);
 
 // --- Global mute ---
 let _muted = false;
-function playSfx(src, volume = 0.25) {
+function playSfx(src, volume = 0.25, rate = 1) {
   if (_muted) return;
   const s = new Audio(src);
   s.volume = volume;
+  s.playbackRate = rate;
   s.play().catch(() => {});
 }
 $('muteBtn').addEventListener('click', () => {
@@ -291,12 +292,13 @@ class FrameAnimator {
       }
     }
 
-    // Fire frame triggers
+    // Fire frame triggers (check range to handle frame skipping)
     if (this.frameTriggers && this._firedTriggers) {
-      const cb = this.frameTriggers.get(this.current);
-      if (cb && !this._firedTriggers.has(this.current)) {
-        this._firedTriggers.add(this.current);
-        cb();
+      for (const [frame, cb] of this.frameTriggers) {
+        if (!this._firedTriggers.has(frame) && frame <= this.current) {
+          this._firedTriggers.add(frame);
+          cb();
+        }
       }
     }
 
@@ -502,7 +504,7 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
           userRockAttackAnim.playOnce(),
           (async () => {
             await delay(200);
-            playSfx('assets/rock-invocation.mp3');
+            playSfx('assets/rock-invocation.mp3', 0.25, 1.5);
             await lightningAnim.playOnce();
           })()
         ]);
@@ -522,11 +524,13 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
       await delay(defenseDelay);
       botDefaultAnim.stop();
       botDefenseAnim._drawFrame(0);
+      setTimeout(() => playSfx('assets/defense-bot-blink.mp3', 0.15, 2.0), 200);
       await blinkDamage($('botCanvas'));
       if (onHit) onHit();
       if (killingBlow) {
         $('botCanvas').classList.add('defeated');
       } else {
+        playSfx('assets/defense-bot.mp3');
         await botDefenseAnim.playOnce();
       }
     })();
