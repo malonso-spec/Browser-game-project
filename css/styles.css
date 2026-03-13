@@ -5,7 +5,8 @@
 }
 
 body {
-  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background-color: #0e0e0e;
   background-image:
     radial-gradient(circle at center, transparent 0%, #0e0e0e 90%),
@@ -15,6 +16,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   padding: 15px;
   color: #fff;
 }
@@ -82,8 +84,7 @@ h1 {
 /* Screen housing — festival LED truss frame */
 .screen-housing {
   position: relative;
-  width: 100%;
-  max-width: min(92vw, 135vh, 1400px);
+  width: min(92vw, 124dvh);
   margin-bottom: 10px;
   padding: 12px;
   border: 2px solid #444;
@@ -398,7 +399,7 @@ h1 {
   gap: 10px;
   flex-wrap: wrap;
   justify-content: center;
-  max-width: min(88vw, 1360px);
+  max-width: min(88vw, 120dvh);
   margin-top: -60px;
   margin-bottom: 12px;
   padding: 16px;
@@ -407,8 +408,8 @@ h1 {
 }
 
 .card {
-  width: clamp(100px, min(10vw, 15vh), 200px);
-  height: clamp(140px, min(14vw, 21vh), 280px);
+  width: clamp(80px, 12dvh, 220px);
+  height: clamp(112px, 17dvh, 308px);
   background: linear-gradient(145deg, #2d3748, #1a202c);
   border: 3px solid #868686;
   border-radius: 2px;
