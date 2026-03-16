@@ -234,7 +234,7 @@ class FrameAnimator {
   preload(onFrame) {
     const promises = [];
     for (let i = 0; i < this.count; i++) {
-      const src = `${this.folder}/frame_${String(i).padStart(5, '0')}.png`;
+      const src = `${this.folder}/frame_${String(i).padStart(5, '0')}.webp`;
       const p = fetch(src)
         .then(r => r.blob())
         .then(blob => createImageBitmap(blob))
@@ -490,10 +490,21 @@ const userRockAttackAnim = new FrameAnimator($('userCanvas'), 'assets/frames/use
 const lightningAnim = new FrameAnimator($('lightningCanvas'), 'assets/frames/lightning', 51, 40);
 const userHealAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-heal', 51, 64);
 
-// Preload all frames with progress tracking
-const allAnimators = [bgAnim, userDefaultAnim, userAttackAnim, userAttackRevAnim, userDefenseAnim, botDefaultAnim, botAttackAnim, botDefenseAnim, userRockAttackAnim, lightningAnim, userHealAnim];
-const totalFrames = allAnimators.reduce((sum, a) => sum + a.count, 0);
+// Preload in two phases for faster startup
+const phase1Animators = [bgAnim, userDefaultAnim, botDefaultAnim]; // idle — needed to start
+const phase2Animators = [userAttackAnim, userAttackRevAnim, userDefenseAnim, botAttackAnim, botDefenseAnim, userRockAttackAnim, lightningAnim, userHealAnim]; // combat — loaded in background
+const allAnimators = [...phase1Animators, ...phase2Animators];
+const phase1Frames = phase1Animators.reduce((sum, a) => sum + a.count, 0);
 let loadedFrames = 0;
+
+// Helper: wait for an animator to be ready (used by combat functions)
+function waitReady(animator) {
+  if (animator.ready) return Promise.resolve();
+  return new Promise(resolve => {
+    const check = () => animator.ready ? resolve() : requestAnimationFrame(check);
+    check();
+  });
+}
 
 // --- Title screen ---
 $('startGameBtn').addEventListener('click', () => {
@@ -587,20 +598,24 @@ loadingBar.appendChild(loadingFill);
 
 function onFrameLoaded() {
   loadedFrames++;
-  const pct = (loadedFrames / totalFrames) * 100;
-  loadingFill.style.width = `${pct}%`;
+  const pct = (loadedFrames / phase1Frames) * 100;
+  loadingFill.style.width = `${Math.min(pct, 100)}%`;
 }
 
 let _preloadResolve;
 const allPreloaded = new Promise(r => { _preloadResolve = r; });
 
 function startPreloading() {
+// Phase 1: load only idle animations (bg + default poses)
 Promise.all(
-  allAnimators.map(a => a.preload(onFrameLoaded))
+  phase1Animators.map(a => a.preload(onFrameLoaded))
 ).then(() => bgAnim.bakeFilter()).then(() => {
   const screen = $('loadingScreen');
   screen.classList.add('fade-out');
   setTimeout(() => screen.remove(), 500);
+
+  // Phase 2: load combat animations silently in background
+  Promise.all(phase2Animators.map(a => a.preload())).catch(() => {});
 
   // Show intro overlay — wait for user to click "Ir a la batalla"
   $('startBattleBtn').addEventListener('click', () => {
@@ -668,6 +683,7 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
     let attack;
     if (isBonus) {
       // Rock Invocation — play rock sprite + lightning bolt sprite
+      await Promise.all([waitReady(userRockAttackAnim), waitReady(lightningAnim)]);
       setTimeout(arenaLightning, 300);
       const lc = $('lightningCanvas');
       lc.style.display = 'block';
@@ -684,6 +700,7 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
       })();
     } else {
       // Normal attack — regular sprite + arena shake
+      await Promise.all([waitReady(userAttackAnim), waitReady(userAttackRevAnim)]);
       setTimeout(arenaShake, 750);
       attack = (async () => {
         await userAttackAnim.playOnce();
@@ -694,6 +711,7 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
     const defenseDelay = isBonus ? 550 : 750;
     const defense = (async () => {
       await delay(defenseDelay);
+      await waitReady(botDefenseAnim);
       botDefaultAnim.stop();
       botDefenseAnim._drawFrame(0);
       setTimeout(() => playSfx('assets/defense-bot-blink.mp3', 0.15, 2.0), 200);
@@ -718,6 +736,7 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
 function playEnemyAttack(killingBlow, onHit) {
   const botCanvas = $('botCanvas');
   return new Promise(async resolve => {
+    await Promise.all([waitReady(botAttackAnim), waitReady(userDefenseAnim)]);
     botCanvas.classList.add('z-front');
     botDefaultAnim.stop();
     setTimeout(() => playSfx('assets/beer-attack.mp3', 0.15, 2.0), 600);
@@ -748,6 +767,7 @@ function playEnemyAttack(killingBlow, onHit) {
 // Player heal — bubble animation + shield glow
 function playHealAnimation() {
   return new Promise(async resolve => {
+    await waitReady(userHealAnim);
     const canvas = $('userCanvas');
     canvas.classList.add('z-front');
     userDefaultAnim.stop();
