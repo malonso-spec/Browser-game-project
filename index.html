@@ -3,12 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Combate por Turnos</title>
+  <title>Rock Mystery Fest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <!-- Title screen -->
+  <div id="titleScreen" class="title-screen">
+    <img src="assets/logo.png" alt="Rock Mystery Fest" class="title-logo">
+    <button class="btn" id="startGameBtn">Start Game</button>
+  </div>
+
+  <!-- Chapter selection -->
+  <div id="chapterSelect" class="chapter-select hidden">
+    <img src="assets/logo.png" alt="Rock Mystery Fest" class="chapter-logo">
+    <h2 class="chapter-heading">Select Chapter</h2>
+    <div class="chapter-grid" id="chapterGrid">
+      <div class="chapter-card" data-chapter="1">
+        <img src="assets/chapter1.png" alt="Chapter 1" class="chapter-img">
+        <div class="chapter-label">Chapter 1</div>
+      </div>
+      <div class="chapter-card chapter-card--locked" data-chapter="2">
+        <img src="assets/chapter2.png" alt="Chapter 2" class="chapter-img">
+        <div class="chapter-label">Chapter 2</div>
+      </div>
+      <div class="chapter-card chapter-card--locked" data-chapter="3">
+        <img src="assets/chapter3.png" alt="Chapter 3" class="chapter-img">
+        <div class="chapter-label">Chapter 3</div>
+      </div>
+      <div class="chapter-card chapter-card--locked" data-chapter="4">
+        <img src="assets/chapter4.png" alt="Chapter 4" class="chapter-img">
+        <div class="chapter-label">Chapter 4</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video intro -->
+  <div id="videoIntro" class="video-intro hidden">
+    <video id="introVideo" playsinline muted>
+      <source src="assets/intro.mp4" type="video/mp4">
+    </video>
+    <button class="skip-intro-btn" id="skipIntroBtn">Skip</button>
+    <button class="btn intro-continue" id="introContinueBtn" style="display:none">Continue</button>
+  </div>
+
   <!-- Loading screen -->
-  <div id="loadingScreen" class="loading-screen">
+  <div id="loadingScreen" class="loading-screen hidden">
     <h1 class="loading-title">Loading...</h1>
     <div class="loading-bar-track" id="loadingBar"></div>
   </div>
@@ -16,7 +58,7 @@
   <span id="turnCount" class="hidden"></span>
   <span id="cardsLeft" class="hidden"></span>
 
-  <button id="muteBtn" class="mute-btn" title="Silenciar">🔊</button>
+  <button id="muteBtn" class="mute-btn" title="Mute">🔊</button>
 
   <div class="game-logo">
     <img src="assets/logo.png" alt="Rock Mystery Fest">
@@ -28,8 +70,8 @@
     <canvas id="userCanvas" class="arena-sprite sprite-left"></canvas>
     <canvas id="botCanvas" class="arena-sprite sprite-right"></canvas>
     <canvas id="lightningCanvas" class="arena-lightning-sprite"></canvas>
-    <div class="turn-info">Turno <span id="currentTurn">1</span></div>
-    <div class="enemy-state" id="enemyState">Estado: Cargando...</div>
+    <div class="turn-info">Turn <span id="currentTurn">1</span></div>
+    <div class="enemy-state" id="enemyState">State: Loading...</div>
 
     <div class="fighter player-side" id="playerFighter">
       <div class="hp-bar" id="playerHearts">
@@ -60,13 +102,27 @@
   </div>
 
   <div class="hint">
-    💡 <strong>Pista:</strong> El enemigo está <span class="state-hint" id="stateHint">...</span> — ¡Encuentra la carta correcta para activar el bonus!
+    💡 <strong>Hint:</strong> The enemy is <span class="state-hint" id="stateHint">...</span> — Find the right card to trigger the bonus!
   </div>
 
 <div class="result hidden" id="result">
     <h2 id="resultText"></h2>
     <p id="resultDesc"></p>
-    <button class="btn" onclick="restart()">Jugar de nuevo</button>
+    <div class="result-buttons">
+      <button class="btn" id="continueBtn" style="display:none">Continue</button>
+      <button class="btn btn--secondary" onclick="restart()">Play Again</button>
+    </div>
+  </div>
+
+  <div id="videoOutro" class="video-outro hidden">
+    <video id="outroVideo" playsinline>
+      <source src="assets/outro.mp4" type="video/mp4">
+    </video>
+    <button class="btn outro-continue" id="outroContinueBtn" style="display:none">Continue</button>
+    <div class="outro-end-screen" id="outroEndScreen" style="display:none">
+      <img src="assets/logo.png" alt="Rock Mystery Fest" class="outro-end-logo">
+      <button class="btn btn--secondary" onclick="window.location.reload()">Play Again</button>
+    </div>
   </div>
 
   <div class="crit-alert hidden" id="critAlert"><img src="assets/Heavy.png" alt="Heavy!"></div>

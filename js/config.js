@@ -1,19 +1,19 @@
 // --- Game Configuration ---
-const STATES = ['Eufórico', 'Ebrio', 'Agobiado', 'Empanado'];
+const STATES = ['Euphoric', 'Drunk', 'Overwhelmed', 'Dazed'];
 
 const STATE_CARD_MAP = {
-  'Eufórico': 'A',
-  'Ebrio': 'A',
-  'Agobiado': 'A',
-  'Empanado': 'A'
+  'Euphoric': 'A',
+  'Drunk': 'A',
+  'Overwhelmed': 'A',
+  'Dazed': 'A'
 };
 
 const CARDS = [
-  { id: 'A', name: 'Golpe Rápido', icon: '⚡', baseDmg: 25, state: 'Eufórico', hasBonus: true },
-  { id: 'B', name: 'Ataque Fuerte', icon: '💪', baseDmg: 25, state: 'Ebrio', hasBonus: true },
-  { id: 'C', name: 'Golpe Crítico', icon: '💥', baseDmg: 20, state: 'Agobiado', hasBonus: true },
-  { id: 'D', name: 'Devastación', icon: '🔥', baseDmg: 20, state: 'Empanado', hasBonus: true },
-  { id: 'R', name: 'Recuperación', icon: '💚', heal: 25, isHeal: true }
+  { id: 'A', name: 'Quick Strike', icon: '⚡', baseDmg: 20, state: 'Euphoric', hasBonus: true },
+  { id: 'B', name: 'Power Hit', icon: '💪', baseDmg: 20, state: 'Drunk', hasBonus: true },
+  { id: 'C', name: 'Critical Blow', icon: '💥', baseDmg: 20, state: 'Overwhelmed', hasBonus: true },
+  { id: 'D', name: 'Devastation', icon: '🔥', baseDmg: 20, state: 'Dazed', hasBonus: true },
+  { id: 'R', name: 'Recovery', icon: '💚', heal: 25, isHeal: true }
 ];
 
 const CRIT_CHANCE = 0.33;

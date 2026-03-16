@@ -7,12 +7,12 @@
 body {
   height: 100dvh;
   overflow: hidden;
-  background-color: #0e0e0e;
+  background-color: #000;
   background-image:
-    radial-gradient(circle at center, transparent 0%, #0e0e0e 90%),
+    radial-gradient(circle at center, transparent 0%, #000 90%),
     url('../assets/smiley-pattern.png');
   background-size: 100% 100%, 120px 120px;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Inter', sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -28,15 +28,215 @@ h1 {
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
 }
 
+/* Title screen */
+.title-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+}
+.title-screen.hidden { display: none; }
+.title-logo {
+  max-width: 400px;
+  width: 70%;
+}
+
+/* Chapter selection */
+.chapter-select {
+  position: fixed;
+  inset: 0;
+  z-index: 350;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+}
+.chapter-select.hidden { display: none; }
+.chapter-logo {
+  max-width: 180px;
+  width: 35%;
+  margin-top: 128px;
+}
+.chapter-heading {
+  font-size: clamp(0.85rem, 1.8dvh, 1.2rem);
+  color: #fbbf24;
+  text-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 64px;
+}
+.chapter-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2vw, 24px);
+  padding: 0 clamp(10px, 3vw, 30px);
+  margin-top: 32px;
+}
+.chapter-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(4px, 0.8dvh, 10px);
+  cursor: pointer;
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+.chapter-card:hover {
+  transform: scale(1.15);
+  z-index: 1;
+}
+.chapter-card--locked:hover {
+  transform: scale(1.08);
+}
+.chapter-img {
+  width: clamp(70px, 14dvh, 160px);
+  height: clamp(70px, 14dvh, 160px);
+  object-fit: cover;
+  border-radius: 10px;
+  border: 3px solid #444;
+  transition: border-color 0.3s;
+}
+.chapter-card:hover .chapter-img {
+  border-color: #fbbf24;
+}
+.chapter-card--locked .chapter-img {
+  filter: grayscale(1) brightness(0.5);
+  opacity: 0.6;
+}
+.chapter-card--locked:hover .chapter-img {
+  border-color: #666;
+}
+.chapter-card--locked {
+  cursor: not-allowed;
+}
+.chapter-label {
+  font-size: clamp(0.65rem, 1.3dvh, 0.9rem);
+  color: #fff;
+  font-weight: bold;
+}
+.chapter-card--locked .chapter-label {
+  opacity: 0.4;
+}
+.chapter-play-btn {
+  min-width: 140px;
+  font-size: clamp(0.9rem, 2dvh, 1.1rem);
+}
+.chapter-play-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Video intro */
+.video-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.video-intro.hidden { display: none; }
+.video-intro video {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  filter: contrast(1.3) brightness(0.85);
+}
+.video-intro::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #000;
+  mix-blend-mode: lighten;
+  pointer-events: none;
+}
+.skip-intro-btn {
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.skip-intro-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+.intro-continue {
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  z-index: 1;
+}
+
+/* Video outro */
+.video-outro {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.video-outro.hidden { display: none; }
+.video-outro video {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  filter: contrast(1.3) brightness(0.85);
+}
+.video-outro::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #000;
+  mix-blend-mode: lighten;
+  pointer-events: none;
+}
+.outro-continue {
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  z-index: 1;
+}
+.outro-end-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+}
+.outro-end-logo {
+  max-width: 320px;
+  width: 60%;
+}
+
 /* Loading screen */
 .loading-screen {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background-color: #0e0e0e;
+  background-color: #000;
   background-image:
-    radial-gradient(circle at center, transparent 0%, #0e0e0e 90%),
-    linear-gradient(rgba(14, 14, 14, 0.85), rgba(14, 14, 14, 0.85)),
+    radial-gradient(circle at center, transparent 0%, #000 90%),
+    linear-gradient(rgba(14, 14, 14, 0.92), rgba(14, 14, 14, 0.92)),
     url('../assets/logo.png');
   background-size: 100% 100%, 100% 100%, 70px auto;
   display: flex;
@@ -637,6 +837,11 @@ h1 {
   width: 100%;
   height: auto;
 }
+.result-buttons {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
 
 /* Intro overlay */
 .intro-overlay {
@@ -693,12 +898,22 @@ h1 {
   cursor: pointer;
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: #fff;
-  font-weight: bold;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
   transition: transform 0.2s;
 }
 
 .btn:hover {
   transform: scale(1.05);
+}
+.btn--secondary {
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.85);
+}
+.btn--secondary:hover {
+  border-color: rgba(255, 255, 255, 0.7);
+  color: #fff;
 }
 
 .hidden {

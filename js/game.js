@@ -27,7 +27,7 @@ function init() {
   });
 
   updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
-  $('enemyState').textContent = 'Estado: ' + game.enemyState;
+  $('enemyState').textContent = 'State: ' + game.enemyState;
   $('stateHint').textContent = game.enemyState;
   $('result').classList.add('hidden');
   // Clean up any mid-flight animation state
@@ -100,8 +100,8 @@ async function playCard(id) {
   if (game.enemyHP <= 0) {
     await delay(800);
     endGame(true, game.bonusUsed
-      ? '¡Activaste el bonus y derrotaste al enemigo!'
-      : 'Derrotaste al enemigo pero sin activar el bonus. ¡El bonus es obligatorio para ganar!');
+      ? 'You activated the bonus and defeated the enemy!'
+      : 'You defeated the enemy without activating the bonus. The bonus is mandatory to win!');
     return;
   }
 
@@ -135,7 +135,7 @@ async function playCard(id) {
   // --- Check player defeated ---
   if (game.playerHP <= 0) {
     await delay(800);
-    endGame(false, 'Tu vida llegó a 0%. ¡Intenta usar Recuperación estratégicamente!');
+    endGame(false, 'Your HP reached 0%. Try using Recovery strategically!');
     return;
   }
 
@@ -154,7 +154,7 @@ async function playCard(id) {
     }
   }
 
-  // If all cards are used, re-enable a random one (not Recuperación nor bonus card)
+  // If all cards are used, re-enable a random one (not Recovery nor bonus card)
   const allCardIds = CARDS.map(c => c.id);
   const availableCards = allCardIds.filter(id => !game.usedCards.includes(id));
   if (availableCards.length === 0) {

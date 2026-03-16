@@ -13,10 +13,32 @@ function playSfx(src, volume = 0.25, rate = 1) {
   s.playbackRate = rate;
   s.play().catch(() => {});
 }
+
+// --- Video music (intro & outro) ---
+const _introMusic = new Audio('assets/intro-music.mp3?v=2');
+_introMusic.loop = true;
+_introMusic.volume = 0.08;
+const _outroMusic = new Audio('assets/outro-music.mp3?v=5');
+_outroMusic.loop = true;
+_outroMusic.volume = 0.08;
+let _activeVideoMusic = null;
+
+function startVideoMusic(track) {
+  if (_activeVideoMusic) { _activeVideoMusic.pause(); _activeVideoMusic.currentTime = 0; }
+  _activeVideoMusic = track;
+  track.currentTime = 0;
+  track.muted = _muted;
+  track.play().catch(() => {});
+}
+function stopVideoMusic() {
+  if (_activeVideoMusic) { _activeVideoMusic.pause(); _activeVideoMusic.currentTime = 0; _activeVideoMusic = null; }
+}
+
 $('muteBtn').addEventListener('click', () => {
   _muted = !_muted;
   $('muteBtn').textContent = _muted ? '🔇' : '🔊';
   if (window._bgMusic) window._bgMusic.muted = _muted;
+  if (_activeVideoMusic) _activeVideoMusic.muted = _muted;
 });
 
 // --- UI updates ---
@@ -67,7 +89,7 @@ function renderCards(game) {
         <span class="card-name">${c.name}</span>
         ${c.isHeal
           ? `<span class="card-damage"><strong>+${c.heal}p</strong> HP</span>`
-          : `<span class="card-damage">Daño: <strong>${c.baseDmg}p</strong></span>
+          : `<span class="card-damage">Damage: <strong>${c.baseDmg}p</strong></span>
              ${c.hasBonus ? `<span class="card-bonus">+Bonus si ${c.state}</span>` : ''}`
         }
       </div>`;
@@ -109,8 +131,59 @@ function showResult(win, reason) {
     const img = win ? 'assets/you-win.png' : 'assets/you-lose.png';
     $('resultText').innerHTML = `<img src="${img}" alt="${win ? 'You Win!' : 'You Lose!'}" class="result-lettering">`;
     $('resultDesc').textContent = '';
+    $('continueBtn').style.display = win ? '' : 'none';
   }, showDelay);
 }
+
+// --- Outro video ---
+const OUTRO_PAUSE_TIME = 274 / 25; // frame 274 at 25fps ≈ 10.96s
+let _outroPhase = 0; // 0=playing, 1=paused at frame 296, 2=playing rest, 3=ended
+
+let _outroRaf = 0;
+function pollOutroPause() {
+  if (_outroPhase === 0 && $('outroVideo').currentTime >= OUTRO_PAUSE_TIME) {
+    _outroPhase = 1;
+    $('outroVideo').pause();
+    $('outroContinueBtn').style.display = '';
+    return;
+  }
+  if (_outroPhase === 0) _outroRaf = requestAnimationFrame(pollOutroPause);
+}
+
+$('continueBtn').addEventListener('click', () => {
+  $('result').classList.add('hidden');
+  if (window._bgMusic) { window._bgMusic.pause(); window._bgMusic.currentTime = 0; }
+  startVideoMusic(_outroMusic);
+  const outro = $('videoOutro');
+  outro.classList.remove('hidden');
+  const video = $('outroVideo');
+  video.playbackRate = 1;
+  video.currentTime = 0;
+  _outroPhase = 0;
+  $('outroContinueBtn').style.display = 'none';
+  $('outroEndScreen').style.display = 'none';
+  video.play().catch(() => {});
+  _outroRaf = requestAnimationFrame(pollOutroPause);
+});
+
+$('outroVideo').addEventListener('ended', () => {
+  _outroPhase = 3;
+  // music keeps playing until Play Again (reload stops it)
+  $('outroContinueBtn').style.display = 'none';
+  $('outroEndScreen').style.display = '';
+});
+
+$('outroContinueBtn').addEventListener('click', () => {
+  $('outroContinueBtn').style.display = 'none';
+  if (_outroPhase === 1) {
+    _outroPhase = 2;
+    const v = $('outroVideo');
+    v.currentTime = v.currentTime + (5 / 25); // skip 5 frames at 25fps
+    v.play().catch(() => {});
+  } else {
+    window.location.reload();
+  }
+});
 
 // ============================================================
 // Global animation loop — single rAF for all animators
@@ -422,6 +495,91 @@ const allAnimators = [bgAnim, userDefaultAnim, userAttackAnim, userAttackRevAnim
 const totalFrames = allAnimators.reduce((sum, a) => sum + a.count, 0);
 let loadedFrames = 0;
 
+// --- Title screen ---
+$('startGameBtn').addEventListener('click', () => {
+  $('titleScreen').classList.add('hidden');
+  $('chapterSelect').classList.remove('hidden');
+});
+
+// --- Chapter Selection Grid ---
+const UNLOCKED_CHAPTERS = new Set([1]); // chapter numbers that are unlocked
+
+$('chapterGrid').addEventListener('click', (e) => {
+  const card = e.target.closest('.chapter-card');
+  if (!card) return;
+  const ch = parseInt(card.dataset.chapter, 10);
+  if (!UNLOCKED_CHAPTERS.has(ch)) return;
+  $('chapterSelect').classList.add('hidden');
+  $('videoIntro').classList.remove('hidden');
+  $('introVideo').play().catch(() => {});
+  startVideoMusic(_introMusic);
+  _introRaf = requestAnimationFrame(pollIntro);
+});
+
+// --- Video intro ---
+
+function endVideoIntro() {
+  const vid = $('videoIntro');
+  if (!vid || vid.classList.contains('hidden')) return;
+  const video = $('introVideo');
+  video.pause();
+  stopVideoMusic();
+  vid.classList.add('hidden');
+  $('loadingScreen').classList.remove('hidden');
+  startPreloading();
+}
+$('introVideo').playbackRate = 1;
+const INTRO_SWAP_TIME = 250 / 25; // frame 250 — swap Skip→Continue early
+const INTRO_PAUSE_TIME = 350 / 25; // frame 350 at 25fps = 14s
+const INTRO_BATTLE_BTN_TIME = 450 / 25; // frame 450 — show "Go to battle!" button (video keeps playing)
+let _introPhase = 0; // 0=playing part1, 1=paused at frame 350, 2=playing part2, 3=ended
+let _introSwapped = false;
+let _introBattleBtnShown = false;
+let _introRaf = 0;
+function pollIntro() {
+  const t = $('introVideo').currentTime;
+  if (_introPhase === 0 && !_introSwapped && t >= INTRO_SWAP_TIME) {
+    _introSwapped = true;
+    $('skipIntroBtn').style.display = 'none';
+    $('introContinueBtn').style.display = '';
+  }
+  if (_introPhase === 0 && t >= INTRO_PAUSE_TIME) {
+    _introPhase = 1;
+    $('introVideo').pause();
+    return;
+  }
+  if (_introPhase === 2 && !_introBattleBtnShown && t >= INTRO_BATTLE_BTN_TIME) {
+    _introBattleBtnShown = true;
+    $('introContinueBtn').textContent = 'Go to battle!';
+    $('introContinueBtn').style.display = '';
+    // video keeps playing — no pause
+  }
+  if (_introPhase === 0 || _introPhase === 2) _introRaf = requestAnimationFrame(pollIntro);
+}
+$('introVideo').addEventListener('ended', () => {
+  _introPhase = 3;
+  if (!_introBattleBtnShown) {
+    $('introContinueBtn').textContent = 'Go to battle!';
+    $('introContinueBtn').style.display = '';
+  }
+});
+$('introContinueBtn').addEventListener('click', () => {
+  $('introContinueBtn').style.display = 'none';
+  if (_introPhase === 0 || _introPhase === 1) {
+    // Skip to second part — jump past frame 350 pause
+    if (_introMusic.paused) startVideoMusic(_introMusic);
+    _introPhase = 2;
+    const v = $('introVideo');
+    v.currentTime = INTRO_PAUSE_TIME + (5 / 25); // jump to frame 355
+    v.play().catch(() => {});
+    _introRaf = requestAnimationFrame(pollIntro); // poll for end pause
+  } else {
+    // Video ended: go to loading screen
+    endVideoIntro();
+  }
+});
+$('skipIntroBtn').addEventListener('click', endVideoIntro);
+
 const loadingBar = $('loadingBar');
 const loadingFill = document.createElement('div');
 loadingFill.className = 'loading-bar-fill';
@@ -433,7 +591,11 @@ function onFrameLoaded() {
   loadingFill.style.width = `${pct}%`;
 }
 
-const allPreloaded = Promise.all(
+let _preloadResolve;
+const allPreloaded = new Promise(r => { _preloadResolve = r; });
+
+function startPreloading() {
+Promise.all(
   allAnimators.map(a => a.preload(onFrameLoaded))
 ).then(() => bgAnim.bakeFilter()).then(() => {
   const screen = $('loadingScreen');
@@ -447,11 +609,13 @@ const allPreloaded = Promise.all(
     // Background music — very low volume, looped
     const bgMusic = new Audio('assets/music.mp3');
     bgMusic.loop = true;
-    bgMusic.volume = 0.02;
+    bgMusic.volume = 0.08;
     bgMusic.play().catch(() => {});
     window._bgMusic = bgMusic;
   });
+  _preloadResolve();
 });
+} // end startPreloading
 
 function startIdleAnimations() {
   bgAnim.loopPause = 120;
