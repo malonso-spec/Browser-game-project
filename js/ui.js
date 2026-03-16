@@ -50,7 +50,6 @@ function renderCards(game) {
   container.innerHTML = CARDS.map(c => {
     const isUsed = game.usedCards.includes(c.id);
     const isBonusCard = c.id === bonusCard;
-    const isBonusAvailable = isBonusCard && !game.bonusUsed && game.turn <= 3;
     const cls = ['card'];
     if (!c.isHeal) cls.push('attack');
     if (isUsed) cls.push('used');
@@ -117,14 +116,22 @@ function showResult(win, reason) {
 // Global animation loop — single rAF for all animators
 // ============================================================
 const activeAnimators = new Set();
+let _rafId = 0;
 
 function animationLoop(timestamp) {
   for (const anim of activeAnimators) {
     anim.tick(timestamp);
   }
-  requestAnimationFrame(animationLoop);
+  if (activeAnimators.size > 0) {
+    _rafId = requestAnimationFrame(animationLoop);
+  } else {
+    _rafId = 0;
+  }
 }
-requestAnimationFrame(animationLoop);
+
+function _startLoop() {
+  if (!_rafId) _rafId = requestAnimationFrame(animationLoop);
+}
 
 // ============================================================
 // FrameAnimator — canvas + pre-decoded ImageBitmap
@@ -326,7 +333,7 @@ class FrameAnimator {
     this.direction = 1;
     this.current = 0;
     this.lastTime = 0;
-    activeAnimators.add(this);
+    activeAnimators.add(this); _startLoop();
   }
 
   startPingPong() {
@@ -335,7 +342,7 @@ class FrameAnimator {
     this.direction = 1;
     this.current = 0;
     this.lastTime = 0;
-    activeAnimators.add(this);
+    activeAnimators.add(this); _startLoop();
   }
 
   playOnce() {
@@ -347,7 +354,7 @@ class FrameAnimator {
       this.lastTime = 0;
       this.onceResolve = resolve;
       this._firedTriggers = this.frameTriggers ? new Set() : null;
-      activeAnimators.add(this);
+      activeAnimators.add(this); _startLoop();
     });
   }
 
@@ -360,7 +367,7 @@ class FrameAnimator {
       this.current = this.bitmaps.length - 1;
       this.lastTime = 0;
       this.onceResolve = resolve;
-      activeAnimators.add(this);
+      activeAnimators.add(this); _startLoop();
     });
   }
 
@@ -380,7 +387,7 @@ class FrameAnimator {
       this.reverseStop = reverseFrames !== undefined
         ? this.bitmaps.length - 1 - reverseFrames
         : 0;
-      activeAnimators.add(this);
+      activeAnimators.add(this); _startLoop();
     });
   }
 
@@ -457,8 +464,10 @@ function startIdleAnimations() {
 // Combat animations
 // ============================================================
 
-function blinkDamage(canvas, lightning) {
-  const animName = lightning ? 'hitFlashLightning' : 'hitFlash';
+function blinkDamage(canvas, variant) {
+  const animName = variant === 'lightning' ? 'hitFlashLightning'
+                 : variant === 'beer'      ? 'hitFlashBeer'
+                 : 'hitFlash';
   return new Promise(resolve => {
     canvas.style.animation = `${animName} 0.72s steps(1)`;
     function onEnd(e) {
@@ -472,22 +481,18 @@ function blinkDamage(canvas, lightning) {
   });
 }
 
+const _arena = document.querySelector('.arena');
+
 function arenaShake() {
-  const arena = document.querySelector('.arena');
-  arena.classList.add('arena-shake');
-  // Use setTimeout (2.02s matches CSS duration) — animationend would
-  // fire early from child animations bubbling up (e.g. hitFlash)
-  setTimeout(() => arena.classList.remove('arena-shake'), 2020);
+  _arena.classList.add('arena-shake');
+  setTimeout(() => _arena.classList.remove('arena-shake'), 2020);
 }
 
 function arenaLightning() {
-  const arena = document.querySelector('.arena');
-  arena.classList.remove('arena-lightning');
-  void arena.offsetWidth; // force reflow to restart animation
-  arena.classList.add('arena-lightning');
-  // Use setTimeout (1.8s matches CSS duration) — animationend would
-  // fire early from child animations bubbling up (e.g. damage-blink)
-  setTimeout(() => arena.classList.remove('arena-lightning'), 1800);
+  _arena.classList.remove('arena-lightning');
+  void _arena.offsetWidth; // force reflow to restart animation
+  _arena.classList.add('arena-lightning');
+  setTimeout(() => _arena.classList.remove('arena-lightning'), 1800);
 }
 
 // Player attacks (forward + reverse sprite) + bot defends
@@ -528,7 +533,7 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
       botDefaultAnim.stop();
       botDefenseAnim._drawFrame(0);
       setTimeout(() => playSfx('assets/defense-bot-blink.mp3', 0.15, 2.0), 200);
-      await blinkDamage($('botCanvas'), isBonus);
+      await blinkDamage($('botCanvas'), isBonus ? 'lightning' : null);
       if (onHit) onHit();
       if (killingBlow) {
         $('botCanvas').classList.add('defeated');
@@ -551,12 +556,7 @@ function playEnemyAttack(killingBlow, onHit) {
   return new Promise(async resolve => {
     botCanvas.classList.add('z-front');
     botDefaultAnim.stop();
-    setTimeout(() => {
-      const beerSfx = new Audio('assets/beer-attack.mp3');
-      beerSfx.volume = 0.15;
-      beerSfx.playbackRate = 2.0;
-      beerSfx.play().catch(() => {});
-    }, 600);
+    setTimeout(() => playSfx('assets/beer-attack.mp3', 0.15, 2.0), 600);
     const attack = botAttackAnim.playOnce();
 
     const defense = (async () => {
@@ -564,7 +564,7 @@ function playEnemyAttack(killingBlow, onHit) {
       userDefaultAnim.stop();
       userDefenseAnim._drawFrame(0);
       setTimeout(() => playSfx('assets/mc-defense.mp3', 0.25, 1.5), 200);
-      await blinkDamage($('userCanvas'));
+      await blinkDamage($('userCanvas'), 'beer');
       if (onHit) onHit();
       if (killingBlow) {
         $('userCanvas').classList.add('defeated');

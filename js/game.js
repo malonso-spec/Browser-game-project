@@ -99,7 +99,7 @@ async function playCard(id) {
   // --- Check enemy defeated ---
   if (game.enemyHP <= 0) {
     await delay(800);
-    endGame(game.bonusUsed, game.bonusUsed
+    endGame(true, game.bonusUsed
       ? '¡Activaste el bonus y derrotaste al enemigo!'
       : 'Derrotaste al enemigo pero sin activar el bonus. ¡El bonus es obligatorio para ganar!');
     return;
