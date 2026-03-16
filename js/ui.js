@@ -18,7 +18,7 @@ function playSfx(src, volume = 0.25, rate = 1) {
 const _introMusic = new Audio('assets/intro-music.mp3?v=2');
 _introMusic.loop = true;
 _introMusic.volume = 0.08;
-const _outroMusic = new Audio('assets/outro-music.mp3?v=5');
+const _outroMusic = new Audio('assets/outro-music.mp3?v=6');
 _outroMusic.loop = true;
 _outroMusic.volume = 0.08;
 let _activeVideoMusic = null;
