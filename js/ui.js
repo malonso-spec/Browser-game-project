@@ -614,7 +614,15 @@ Promise.all(
   screen.classList.add('fade-out');
   setTimeout(() => screen.remove(), 500);
 
-  // Phase 2: load combat animations silently in background
+  // Phase 2: load combat animations + card images silently in background
+  const cardImages = [
+    'assets/cards/attack.png',
+    'assets/cards/rock-10.png',
+    'assets/cards/rock-20.png',
+    'assets/cards/rock-30.png',
+    'assets/cards/Protection.png'
+  ];
+  cardImages.forEach(src => { const img = new Image(); img.src = src; });
   Promise.all(phase2Animators.map(a => a.preload())).catch(() => {});
 
   // Show intro overlay — wait for user to click "Ir a la batalla"
