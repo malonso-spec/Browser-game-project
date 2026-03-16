@@ -530,7 +530,7 @@ function endVideoIntro() {
 }
 $('introVideo').playbackRate = 1;
 const INTRO_SWAP_TIME = 250 / 25; // frame 250 — swap Skip→Continue early
-const INTRO_PAUSE_TIME = 350 / 25; // frame 350 at 25fps = 14s
+const INTRO_PAUSE_TIME = 325 / 25; // frame 325 at 25fps = 13s (viñetas fully visible)
 const INTRO_BATTLE_BTN_TIME = 450 / 25; // frame 450 — show "Go to battle!" button (video keeps playing)
 let _introPhase = 0; // 0=playing part1, 1=paused at frame 350, 2=playing part2, 3=ended
 let _introSwapped = false;
