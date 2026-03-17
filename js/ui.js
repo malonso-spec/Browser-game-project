@@ -42,22 +42,17 @@ $('muteBtn').addEventListener('click', () => {
 });
 
 // --- UI updates ---
-function updateHearts(containerId, hp) {
+function updateHearts(containerId, hp, textId) {
   const container = $(containerId);
   const pct = Math.max(0, Math.min(100, hp));
   const fill = container.querySelector('.hp-bar-fill');
-  const heart = container.querySelector('.hp-heart');
   fill.style.width = pct + '%';
-  if (containerId === 'enemyHearts') {
-    heart.style.left = (100 - pct) + '%';
-  } else {
-    heart.style.left = pct + '%';
-  }
+  if (textId) $(textId).textContent = `${Math.round(hp)}/100`;
 }
 
 function updateUI(playerHP, enemyHP, turn, usedCards) {
-  updateHearts('playerHearts', playerHP);
-  updateHearts('enemyHearts', enemyHP);
+  updateHearts('playerHearts', playerHP, 'playerHpText');
+  updateHearts('enemyHearts', enemyHP, 'enemyHpText');
   $('turnCount').textContent = turn;
   $('currentTurn').textContent = turn;
   $('cardsLeft').textContent = 5 - usedCards.length;
@@ -506,21 +501,9 @@ function waitReady(animator) {
   });
 }
 
-// --- Title screen ---
+// --- Title screen → go straight to video intro ---
 $('startGameBtn').addEventListener('click', () => {
   $('titleScreen').classList.add('hidden');
-  $('chapterSelect').classList.remove('hidden');
-});
-
-// --- Chapter Selection Grid ---
-const UNLOCKED_CHAPTERS = new Set([1]); // chapter numbers that are unlocked
-
-$('chapterGrid').addEventListener('click', (e) => {
-  const card = e.target.closest('.chapter-card');
-  if (!card) return;
-  const ch = parseInt(card.dataset.chapter, 10);
-  if (!UNLOCKED_CHAPTERS.has(ch)) return;
-  $('chapterSelect').classList.add('hidden');
   $('videoIntro').classList.remove('hidden');
   $('introVideo').play().catch(() => {});
   startVideoMusic(_introMusic);
@@ -596,34 +579,42 @@ const loadingFill = document.createElement('div');
 loadingFill.className = 'loading-bar-fill';
 loadingBar.appendChild(loadingFill);
 
+const totalFrames = allAnimators.reduce((sum, a) => sum + a.count, 0);
+
 function onFrameLoaded() {
   loadedFrames++;
-  const pct = (loadedFrames / phase1Frames) * 100;
+  const pct = (loadedFrames / totalFrames) * 100;
   loadingFill.style.width = `${Math.min(pct, 100)}%`;
 }
 
 let _preloadResolve;
 const allPreloaded = new Promise(r => { _preloadResolve = r; });
 
-function startPreloading() {
-// Phase 1: load only idle animations (bg + default poses)
-Promise.all(
-  phase1Animators.map(a => a.preload(onFrameLoaded))
-).then(() => bgAnim.bakeFilter()).then(() => {
-  const screen = $('loadingScreen');
-  screen.classList.add('fade-out');
-  setTimeout(() => screen.remove(), 500);
-
-  // Phase 2: load combat animations + card images silently in background
-  const cardImages = [
+function preloadCardImages() {
+  const cardSrcs = [
     'assets/cards/attack.png',
     'assets/cards/rock-10.png',
     'assets/cards/rock-20.png',
     'assets/cards/rock-30.png',
     'assets/cards/Protection.png'
   ];
-  cardImages.forEach(src => { const img = new Image(); img.src = src; });
-  Promise.all(phase2Animators.map(a => a.preload())).catch(() => {});
+  return Promise.all(cardSrcs.map(src => new Promise(resolve => {
+    const img = new Image();
+    img.onload = resolve;
+    img.onerror = resolve;
+    img.src = src;
+  })));
+}
+
+function startPreloading() {
+// Load everything: all animations + card images + bake filter
+Promise.all([
+  ...allAnimators.map(a => a.preload(onFrameLoaded)),
+  preloadCardImages()
+]).then(() => bgAnim.bakeFilter()).then(() => {
+  const screen = $('loadingScreen');
+  screen.classList.add('fade-out');
+  setTimeout(() => screen.remove(), 500);
 
   // Show intro overlay — wait for user to click "Ir a la batalla"
   $('startBattleBtn').addEventListener('click', () => {
