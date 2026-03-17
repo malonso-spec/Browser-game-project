@@ -46,6 +46,50 @@ h1 {
   width: 70%;
 }
 
+/* Name input screen */
+.name-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 375;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+}
+.name-screen.hidden { display: none; }
+.name-heading {
+  font-size: clamp(0.85rem, 1.8dvh, 1.2rem);
+  color: #fbbf24;
+  text-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+  letter-spacing: 0.05em;
+  margin-top: 64px;
+}
+.name-input {
+  margin-top: 32px;
+  width: clamp(200px, 40vw, 320px);
+  padding: 10px 16px;
+  font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  color: #fff;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.name-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+.name-input:focus {
+  border-color: #fbbf24;
+}
+.name-screen .btn {
+  margin-top: 24px;
+}
+
 /* Chapter selection */
 .chapter-select {
   position: fixed;
@@ -494,11 +538,26 @@ h1 {
   transition: filter 0.5s ease;
 }
 
-/* Shield glow — bright outline on MC after heal */
+/* Shield glow — #7964FF tint on MC + thin outline after heal */
 .shield-glow {
-  filter: drop-shadow(0 0 6px rgba(255, 182, 193, 0.9))
-          drop-shadow(0 0 14px rgba(255, 182, 193, 0.5));
+  filter: sepia(0.35) saturate(3) hue-rotate(220deg) brightness(1.1)
+          drop-shadow(0 0 4px rgba(121, 100, 255, 0.9))
+          drop-shadow(0 0 10px rgba(121, 100, 255, 0.5));
   transition: filter 0.3s ease;
+  animation: shieldPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes shieldPulse {
+  0%, 100% {
+    filter: sepia(0.35) saturate(3) hue-rotate(220deg) brightness(1.1)
+            drop-shadow(0 0 4px rgba(121, 100, 255, 0.9))
+            drop-shadow(0 0 10px rgba(121, 100, 255, 0.5));
+  }
+  50% {
+    filter: sepia(0.4) saturate(3.2) hue-rotate(220deg) brightness(1.15)
+            drop-shadow(0 0 6px rgba(121, 100, 255, 1))
+            drop-shadow(0 0 14px rgba(121, 100, 255, 0.6));
+  }
 }
 
 /* Arena tremor effect — shakes content only, not the frame */
@@ -565,8 +624,8 @@ h1 {
   position: absolute;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 5px;
+  align-items: flex-start;
+  gap: 3px;
   z-index: 2;
 }
 
@@ -578,6 +637,7 @@ h1 {
 .fighter.enemy-side {
   top: 12px;
   right: 15px;
+  align-items: flex-end;
 }
 
 .shake {
@@ -595,12 +655,13 @@ h1 {
   position: relative;
   display: flex;
   align-items: center;
-  width: clamp(100px, 10vw, 180px);
+  width: clamp(120px, 14vw, 240px);
 }
 
 .hp-bar-track {
+  position: relative;
   width: 100%;
-  height: clamp(6px, 0.6vw, 10px);
+  height: clamp(8px, 0.9vw, 14px);
   background: #333;
   border-radius: 4px;
   overflow: hidden;
@@ -612,6 +673,17 @@ h1 {
   background: #00E5FF;
   border-radius: 4px;
   transition: width 0.4s ease;
+}
+
+.hp-heal-fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(180, 180, 180, 0.9);
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
 }
 
 .enemy-side .hp-bar-fill {
@@ -628,6 +700,16 @@ h1 {
   -webkit-text-stroke: 1px rgba(0, 0, 0, 0.8);
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7));
   pointer-events: none;
+}
+
+/* Fighter name labels */
+.fighter-name {
+  font-size: clamp(0.65rem, 1.3dvh, 0.9rem);
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+  margin-top: 1px;
 }
 
 /* Enemy state */

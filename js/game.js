@@ -68,8 +68,10 @@ async function playCard(id) {
 
   // --- Resolve card ---
   if (card.isHeal) {
+    const oldHP = game.playerHP;
     game.playerHP = Math.min(100, game.playerHP + card.heal);
     game.shieldActive = true;
+    showHealFill(oldHP, game.playerHP);
   } else {
     let dmg = card.baseDmg;
     let isBonus = false;

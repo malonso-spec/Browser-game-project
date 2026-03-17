@@ -16,6 +16,14 @@
     <button class="btn" id="startGameBtn">Start Game</button>
   </div>
 
+  <!-- Name input screen -->
+  <div id="nameScreen" class="name-screen hidden">
+    <img src="assets/logo.png" alt="Rock Mystery Fest" class="chapter-logo">
+    <h2 class="name-heading">What's your name, rocker?</h2>
+    <input type="text" id="playerNameInput" class="name-input" placeholder="Enter your name..." maxlength="16" autocomplete="off">
+    <button class="btn" id="nameConfirmBtn">Let's go!</button>
+  </div>
+
   <!-- Chapter selection -->
   <div id="chapterSelect" class="chapter-select hidden">
     <img src="assets/logo.png" alt="Rock Mystery Fest" class="chapter-logo">
@@ -77,9 +85,11 @@
       <div class="hp-bar" id="playerHearts">
         <div class="hp-bar-track">
           <div class="hp-bar-fill" style="width:100%"></div>
+          <div class="hp-heal-fill" id="playerHealFill"></div>
         </div>
         <span class="hp-heart">★</span>
       </div>
+      <div class="fighter-name" id="playerNameLabel">Player</div>
     </div>
 
     <div class="fighter enemy-side" id="enemyFighter">
@@ -89,6 +99,7 @@
         </div>
         <span class="hp-heart">★</span>
       </div>
+      <div class="fighter-name">Beer Provider</div>
     </div>
 
     <div class="bonus-indicator bonus-available" id="bonusIndicator">⚡ Bonus: T1 +10p | T2 +20p | T3 +30p</div>

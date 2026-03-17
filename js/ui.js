@@ -63,6 +63,21 @@ function updateUI(playerHP, enemyHP, turn, usedCards) {
   $('cardsLeft').textContent = 5 - usedCards.length;
 }
 
+function showHealFill(oldHP, newHP) {
+  const healFill = $('playerHealFill');
+  if (!healFill) return;
+  const oldPct = Math.max(0, Math.min(100, oldHP));
+  const newPct = Math.max(0, Math.min(100, newHP));
+  healFill.style.left = oldPct + '%';
+  healFill.style.width = (newPct - oldPct) + '%';
+  healFill.style.transition = 'none';
+  healFill.style.opacity = '1';
+  // Force reflow then fade out
+  void healFill.offsetWidth;
+  healFill.style.transition = 'opacity 1.5s ease 0.8s';
+  healFill.style.opacity = '0';
+}
+
 let cardsDealt = false;
 
 function renderCards(game) {
@@ -506,10 +521,28 @@ function waitReady(animator) {
   });
 }
 
-// --- Title screen ---
+// --- Title screen → Name screen ---
+let playerName = 'Player';
+
 $('startGameBtn').addEventListener('click', () => {
   $('titleScreen').classList.add('hidden');
+  $('nameScreen').classList.remove('hidden');
+  $('playerNameInput').focus();
+});
+
+// --- Name screen → Chapter select ---
+function confirmName() {
+  const raw = $('playerNameInput').value.trim();
+  if (!raw) return;
+  playerName = raw;
+  $('playerNameLabel').textContent = playerName;
+  $('nameScreen').classList.add('hidden');
   $('chapterSelect').classList.remove('hidden');
+}
+
+$('nameConfirmBtn').addEventListener('click', confirmName);
+$('playerNameInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') confirmName();
 });
 
 // --- Chapter Selection Grid ---
