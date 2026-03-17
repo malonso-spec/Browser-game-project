@@ -331,28 +331,32 @@ h1 {
   transition: width 0.15s ease;
 }
 
-/* Mute button */
+/* Mute button — flat, minimal */
 .mute-btn {
   position: fixed;
-  top: 12px;
-  right: 12px;
-  z-index: 100;
-  background: rgba(30, 30, 30, 0.7);
-  border: 1px solid #444;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 1rem;
+  top: 16px;
+  right: 16px;
+  z-index: 9999;
+  background: none;
+  border: none;
+  width: 44px;
+  height: 44px;
+  padding: 8px;
   cursor: pointer;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.12s;
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 0.2s;
 }
 .mute-btn:hover {
-  background: rgba(60, 60, 60, 0.8);
+  color: #fff;
 }
+.mute-icon {
+  width: 100%;
+  height: 100%;
+  display: none;
+}
+.mute-icon--on { display: block; }
+.mute-btn.muted .mute-icon--on { display: none; }
+.mute-btn.muted .mute-icon--off { display: block; }
 
 
 /* Game logo above arena */
@@ -684,6 +688,24 @@ h1 {
   opacity: 0;
   transition: opacity 0.6s ease;
   pointer-events: none;
+}
+
+.hp-pct {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 8px);
+  transform: translateY(-50%);
+  font-size: clamp(6px, 0.65vw, 10px);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  z-index: 2;
+  line-height: 1;
+  white-space: nowrap;
+}
+.enemy-side .hp-pct {
+  left: auto;
+  right: calc(100% + 8px);
 }
 
 .enemy-side .hp-bar-fill {

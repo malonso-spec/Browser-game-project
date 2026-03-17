@@ -36,7 +36,7 @@ function stopVideoMusic() {
 
 $('muteBtn').addEventListener('click', () => {
   _muted = !_muted;
-  $('muteBtn').textContent = _muted ? '🔇' : '🔊';
+  $('muteBtn').classList.toggle('muted', _muted);
   if (window._bgMusic) window._bgMusic.muted = _muted;
   if (_activeVideoMusic) _activeVideoMusic.muted = _muted;
 });
@@ -47,7 +47,9 @@ function updateHearts(containerId, hp) {
   const pct = Math.max(0, Math.min(100, hp));
   const fill = container.querySelector('.hp-bar-fill');
   const heart = container.querySelector('.hp-heart');
+  const pctLabel = container.querySelector('.hp-pct');
   fill.style.width = pct + '%';
+  if (pctLabel) pctLabel.textContent = Math.round(pct) + '%';
   if (containerId === 'enemyHearts') {
     heart.style.left = (100 - pct) + '%';
   } else {
