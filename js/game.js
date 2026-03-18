@@ -26,6 +26,8 @@ function init() {
     enemyState: STATES[Math.floor(Math.random() * STATES.length)]
   });
 
+  _healBase = -1;
+  $('playerHealFill').style.opacity = '0';
   updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
   $('enemyState').textContent = 'State: ' + game.enemyState;
   $('stateHint').textContent = game.enemyState;
@@ -112,7 +114,8 @@ async function playCard(id) {
     $('bonusIndicator').textContent = '✗ Bonus perdido';
   }
 
-  // --- Enemy counterattack ---
+  // --- Enemy counterattack (pause to separate actions) ---
+  await delay(800);
   let enemyDmg;
   if (game.shieldActive) {
     enemyDmg = ENEMY_DMG_BLOCKED;
@@ -171,6 +174,7 @@ async function playCard(id) {
   updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
   game.isProcessing = false;
   renderCards(game);
+  showYourTurn();
 }
 
 function endGame(win, reason) {
