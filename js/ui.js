@@ -42,13 +42,34 @@ $('muteBtn').addEventListener('click', () => {
 });
 
 // --- UI updates ---
+let _healBase = -1; // HP point where heal started (-1 = no active heal)
+
 function updateHearts(containerId, hp) {
   const container = $(containerId);
   const pct = Math.max(0, Math.min(100, hp));
   const fill = container.querySelector('.hp-bar-fill');
   const heart = container.querySelector('.hp-heart');
   const pctLabel = container.querySelector('.hp-pct');
-  fill.style.width = pct + '%';
+
+  if (containerId === 'playerHearts' && _healBase >= 0) {
+    // Blue bar = up to the heal base (or current HP if lower)
+    const bluePct = Math.min(pct, _healBase);
+    fill.style.width = bluePct + '%';
+    // Pink bar = from heal base to current HP
+    const healFill = $('playerHealFill');
+    const pinkWidth = Math.max(0, pct - _healBase);
+    healFill.style.left = bluePct + '%';
+    healFill.style.width = pinkWidth + '%';
+    // If HP dropped below heal base, heal is gone
+    if (pct <= _healBase) {
+      _healBase = -1;
+      healFill.style.opacity = '0';
+      fill.style.width = pct + '%';
+    }
+  } else {
+    fill.style.width = pct + '%';
+  }
+
   if (pctLabel) pctLabel.textContent = Math.round(pct) + '%';
   if (containerId === 'enemyHearts') {
     heart.style.left = (100 - pct) + '%';
@@ -68,16 +89,12 @@ function updateUI(playerHP, enemyHP, turn, usedCards) {
 function showHealFill(oldHP, newHP) {
   const healFill = $('playerHealFill');
   if (!healFill) return;
-  const oldPct = Math.max(0, Math.min(100, oldHP));
+  _healBase = Math.max(0, Math.min(100, oldHP));
   const newPct = Math.max(0, Math.min(100, newHP));
-  healFill.style.left = oldPct + '%';
-  healFill.style.width = (newPct - oldPct) + '%';
+  healFill.style.left = _healBase + '%';
+  healFill.style.width = (newPct - _healBase) + '%';
   healFill.style.transition = 'none';
   healFill.style.opacity = '1';
-  // Force reflow then fade out
-  void healFill.offsetWidth;
-  healFill.style.transition = 'opacity 1.5s ease 0.8s';
-  healFill.style.opacity = '0';
 }
 
 let cardsDealt = false;
@@ -134,6 +151,15 @@ function showCritAlert() {
   const el = $('critAlert');
   el.classList.remove('hidden');
   playSfx('assets/Heavy.mp3');
+  setTimeout(() => el.classList.add('hidden'), 1200);
+}
+
+function showYourTurn() {
+  const el = $('yourTurnBanner');
+  el.classList.add('hidden');
+  // Force reflow to restart the CSS animation
+  void el.offsetWidth;
+  el.classList.remove('hidden');
   setTimeout(() => el.classList.add('hidden'), 1200);
 }
 
@@ -511,7 +537,14 @@ const userHealAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-heal
 const phase1Animators = [bgAnim, userDefaultAnim, botDefaultAnim]; // idle — needed to start
 const phase2Animators = [userAttackAnim, userAttackRevAnim, userDefenseAnim, botAttackAnim, botDefenseAnim, userRockAttackAnim, lightningAnim, userHealAnim]; // combat — loaded in background
 const allAnimators = [...phase1Animators, ...phase2Animators];
-const phase1Frames = phase1Animators.reduce((sum, a) => sum + a.count, 0);
+const cardImageSrcs = [
+  'assets/cards/attack.png',
+  'assets/cards/rock-10.png',
+  'assets/cards/rock-20.png',
+  'assets/cards/rock-30.png',
+  'assets/cards/Protection.png'
+];
+const phase1Frames = phase1Animators.reduce((sum, a) => sum + a.count, 0) + cardImageSrcs.length;
 let loadedFrames = 0;
 
 // Helper: wait for an animator to be ready (used by combat functions)
@@ -532,14 +565,17 @@ $('startGameBtn').addEventListener('click', () => {
   $('playerNameInput').focus();
 });
 
-// --- Name screen → Chapter select ---
+// --- Name screen → Video intro (skip chapter select) ---
 function confirmName() {
   const raw = $('playerNameInput').value.trim();
   if (!raw) return;
   playerName = raw;
   $('playerNameLabel').textContent = playerName;
   $('nameScreen').classList.add('hidden');
-  $('chapterSelect').classList.remove('hidden');
+  $('videoIntro').classList.remove('hidden');
+  $('introVideo').play().catch(() => {});
+  startVideoMusic(_introMusic);
+  _introRaf = requestAnimationFrame(pollIntro);
 }
 
 $('nameConfirmBtn').addEventListener('click', confirmName);
@@ -640,29 +676,32 @@ function onFrameLoaded() {
 let _preloadResolve;
 const allPreloaded = new Promise(r => { _preloadResolve = r; });
 
+// Keep references to decoded card images so the browser keeps them in cache
+const _cardImageCache = [];
+
 function startPreloading() {
-// Phase 1: load only idle animations (bg + default poses)
-Promise.all(
-  phase1Animators.map(a => a.preload(onFrameLoaded))
-).then(() => bgAnim.bakeFilter()).then(() => {
+// Phase 1: load idle animations + card images (fully decoded)
+const cardImagePromises = cardImageSrcs.map(src => {
+  const img = new Image();
+  img.src = src;
+  _cardImageCache.push(img);
+  return img.decode().then(() => onFrameLoaded(), () => onFrameLoaded());
+});
+Promise.all([
+  ...phase1Animators.map(a => a.preload(onFrameLoaded)),
+  ...cardImagePromises
+]).then(() => bgAnim.bakeFilter()).then(() => {
   const screen = $('loadingScreen');
   screen.classList.add('fade-out');
   setTimeout(() => screen.remove(), 500);
 
-  // Phase 2: load combat animations + card images silently in background
-  const cardImages = [
-    'assets/cards/attack.png',
-    'assets/cards/rock-10.png',
-    'assets/cards/rock-20.png',
-    'assets/cards/rock-30.png',
-    'assets/cards/Protection.png'
-  ];
-  cardImages.forEach(src => { const img = new Image(); img.src = src; });
+  // Phase 2: load combat animations silently in background
   Promise.all(phase2Animators.map(a => a.preload())).catch(() => {});
 
   // Show intro overlay — wait for user to click "Ir a la batalla"
   $('startBattleBtn').addEventListener('click', () => {
     $('introOverlay').classList.add('hidden');
+    showYourTurn();
 
     // Background music — very low volume, looped
     const bgMusic = new Audio('assets/music.mp3');

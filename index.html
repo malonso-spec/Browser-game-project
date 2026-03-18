@@ -4,10 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rock Mystery Fest</title>
+  <link rel="icon" type="image/png" href="assets/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="preload" href="assets/loading-character.png" as="image">
+  <link rel="preload" href="assets/cards/attack.png" as="image">
+  <link rel="preload" href="assets/cards/rock-10.png" as="image">
+  <link rel="preload" href="assets/cards/rock-20.png" as="image">
+  <link rel="preload" href="assets/cards/rock-30.png" as="image">
+  <link rel="preload" href="assets/cards/Protection.png" as="image">
 </head>
 <body>
   <!-- Title screen -->
@@ -150,6 +157,7 @@
   </div>
 
   <div class="crit-alert hidden" id="critAlert"><img src="assets/Heavy.png" alt="Heavy!"></div>
+  <div class="your-turn-banner hidden" id="yourTurnBanner"><img src="assets/your-turn.png" alt="Your Turn!"></div>
 
   <div class="intro-overlay" id="introOverlay">
     <div class="intro-content">
