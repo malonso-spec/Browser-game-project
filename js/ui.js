@@ -698,17 +698,18 @@ Promise.all([
   // Phase 2: load combat animations silently in background
   Promise.all(phase2Animators.map(a => a.preload())).catch(() => {});
 
+  // Preload background music so it's ready instantly on click
+  const bgMusic = new Audio('assets/music.mp3');
+  bgMusic.loop = true;
+  bgMusic.volume = 0.08;
+  bgMusic.preload = 'auto';
+  window._bgMusic = bgMusic;
+
   // Show intro overlay — wait for user to click "Ir a la batalla"
   $('startBattleBtn').addEventListener('click', () => {
     $('introOverlay').classList.add('hidden');
     showYourTurn();
-
-    // Background music — very low volume, looped
-    const bgMusic = new Audio('assets/music.mp3');
-    bgMusic.loop = true;
-    bgMusic.volume = 0.08;
     bgMusic.play().catch(() => {});
-    window._bgMusic = bgMusic;
   });
   _preloadResolve();
 });
