@@ -7,14 +7,14 @@
   <link rel="icon" type="image/png" href="assets/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="preload" href="assets/loading-character.png" as="image">
-  <link rel="preload" href="assets/cards/attack.png" as="image">
-  <link rel="preload" href="assets/cards/rock-10.png" as="image">
-  <link rel="preload" href="assets/cards/rock-20.png" as="image">
-  <link rel="preload" href="assets/cards/rock-30.png" as="image">
-  <link rel="preload" href="assets/cards/Protection.png" as="image">
+  <link rel="preload" href="assets/cards/attack.jpg" as="image">
+  <link rel="preload" href="assets/cards/rock-30.jpg" as="image">
+  <link rel="preload" href="assets/cards/rock-40.jpg" as="image">
+  <link rel="preload" href="assets/cards/rock-50.jpg" as="image">
+  <link rel="preload" href="assets/cards/protection.jpg" as="image">
 </head>
 <body>
   <!-- Title screen -->
@@ -86,6 +86,7 @@
     </svg>
   </button>
 
+  <div class="game-stage">
   <div class="game-logo">
     <img src="assets/logo.png" alt="Rock Mystery Fest">
   </div>
@@ -127,6 +128,7 @@
   </div>
 
   <div class="cards" id="cards"></div>
+  </div><!-- end game-stage -->
 
   <div class="sponsor-logo">
     <img src="assets/freepik-logo.png" alt="Freepik">
@@ -162,13 +164,71 @@
   <div class="intro-overlay" id="introOverlay">
     <div class="intro-content">
       <h2>How to Play</h2>
-      <ul>
-        <li>Play your cards to crush the enemy</li>
-        <li><strong>Rock Invocation</strong> charges up each turn and hits harder every time... but it only lasts 3 turns, don't sleep on it</li>
-        <li>If things get rough, pop a <strong>Bubble Gum</strong> to shield yourself</li>
-        <li>Give it all you got!</li>
-      </ul>
-      <button class="btn" id="startBattleBtn">Go to battle!</button>
+      <div class="intro-body">
+        <button class="intro-nav-btn intro-nav-prev" id="introPrev" style="visibility:hidden"><img src="assets/play-icon.png" alt="Previous"></button>
+        <div class="intro-steps">
+          <div class="intro-step active" data-step="0">
+            <span class="step-number">1</span>
+            <p>Play your cards to crush the enemy</p>
+            <div class="step-diagram" data-anim="attack">
+              <svg viewBox="0 0 200 120" fill="none">
+                <rect x="10" y="5" width="180" height="80" rx="6" stroke="#555" stroke-width="2"/>
+                <rect class="dia-card dia-c1" x="25" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card dia-c2" x="55" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card dia-c3" x="85" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card dia-c4" x="115" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card dia-c5" x="145" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-attack-card" x="85" y="68" width="20" height="32" rx="3" fill="#fbbf24"/>
+                <circle class="dia-hit" cx="100" cy="25" r="8" fill="#fbbf24" opacity="0"/>
+              </svg>
+            </div>
+          </div>
+          <div class="intro-step" data-step="1">
+            <span class="step-number">2</span>
+            <p><strong>Rock Invocation</strong> charges up each turn and hits harder every time... but it only lasts 3 turns, don't sleep on it</p>
+            <div class="step-diagram" data-anim="rock">
+              <svg viewBox="0 0 200 120" fill="none">
+                <rect x="10" y="5" width="180" height="80" rx="6" stroke="#555" stroke-width="2"/>
+                <rect class="dia-card" x="25" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="55" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="85" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="115" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="145" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-rock-card" x="25" y="68" width="20" height="32" rx="3" fill="#fbbf24"/>
+                <text class="dia-rock-txt" x="35" y="88" text-anchor="middle" font-size="9" font-weight="700" fill="#000">⚡</text>
+              </svg>
+            </div>
+          </div>
+          <div class="intro-step" data-step="2">
+            <span class="step-number">3</span>
+            <p>Use <strong>Bubble Gum</strong> to recover 25 HP and activate a shield that blocks part of the next enemy attack</p>
+            <div class="step-diagram" data-anim="shield">
+              <svg viewBox="0 0 200 120" fill="none">
+                <rect x="10" y="5" width="180" height="80" rx="6" stroke="#555" stroke-width="2"/>
+                <rect class="dia-card" x="25" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="55" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="85" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="115" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="145" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-shield-card" x="145" y="68" width="20" height="32" rx="3" fill="#b464ff"/>
+                <text class="dia-shield-txt" x="155" y="88" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">♥</text>
+              </svg>
+            </div>
+          </div>
+          <div class="intro-step" data-step="3">
+            <div class="intro-final-btns">
+              <button class="btn" id="startBattleBtn">Go to battle!</button>
+              <button class="btn btn--secondary" id="replayTutorialBtn">Back to tutorial</button>
+            </div>
+          </div>
+        </div>
+        <button class="intro-nav-btn" id="introNext"><img src="assets/play-icon.png" alt="Next"></button>
+      </div>
+      <div class="intro-dots" id="introDots">
+        <span class="intro-dot active" data-dot="0"></span>
+        <span class="intro-dot" data-dot="1"></span>
+        <span class="intro-dot" data-dot="2"></span>
+      </div>
     </div>
   </div>
 

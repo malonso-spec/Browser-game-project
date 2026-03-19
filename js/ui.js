@@ -60,11 +60,15 @@ function updateHearts(containerId, hp) {
     const pinkWidth = Math.max(0, pct - _healBase);
     healFill.style.left = bluePct + '%';
     healFill.style.width = pinkWidth + '%';
-    // If HP dropped below heal base, heal is gone
+    // After shield hit: merge heal segment into main bar, then fade
     if (pct <= _healBase) {
       _healBase = -1;
-      healFill.style.opacity = '0';
+      // Expand main bar to full current HP so it covers the heal area
       fill.style.width = pct + '%';
+      fill.classList.remove('healing');
+      // Fade out the heal fill smoothly
+      healFill.style.transition = 'opacity 0.6s ease';
+      healFill.style.opacity = '0';
     }
   } else {
     fill.style.width = pct + '%';
@@ -95,6 +99,9 @@ function showHealFill(oldHP, newHP) {
   healFill.style.width = (newPct - _healBase) + '%';
   healFill.style.transition = 'none';
   healFill.style.opacity = '1';
+  // Flatten inner corners so bars look joined
+  const fill = $('playerHearts').querySelector('.hp-bar-fill');
+  if (fill) fill.classList.add('healing');
 }
 
 let cardsDealt = false;
@@ -705,12 +712,56 @@ Promise.all([
   bgMusic.preload = 'auto';
   window._bgMusic = bgMusic;
 
-  // Show intro overlay — wait for user to click "Ir a la batalla"
+  // --- Step-by-step instructions navigation ---
+  const introSteps = document.querySelectorAll('.intro-step');
+  const introDots  = document.querySelectorAll('.intro-dot');
+  const prevBtn    = $('introPrev');
+  const nextBtn    = $('introNext');
+  let currentStep  = 0;
+  const totalSteps = introSteps.length;
+
+  const introTitle = document.querySelector('.intro-content h2');
+  const dotsContainer = $('introDots');
+
+  function showStep(n) {
+    currentStep = n;
+    introSteps.forEach(s => s.classList.remove('active'));
+    introDots.forEach(d => d.classList.remove('active'));
+    introSteps[n].classList.add('active');
+    if (introDots[n]) introDots[n].classList.add('active');
+    const isLast = n === totalSteps - 1;
+    prevBtn.style.visibility = n === 0 ? 'hidden' : 'visible';
+    nextBtn.style.visibility = isLast ? 'hidden' : 'visible';
+    // Hide title, arrows, dots on last step
+    introTitle.style.display = isLast ? 'none' : '';
+    prevBtn.style.display = isLast ? 'none' : '';
+    dotsContainer.style.display = isLast ? 'none' : '';
+    // Restart diagram animations by re-inserting the SVG
+    const diagram = introSteps[n].querySelector('.step-diagram');
+    if (diagram) {
+      const svg = diagram.querySelector('svg');
+      if (svg) { const clone = svg.cloneNode(true); svg.replaceWith(clone); }
+    }
+  }
+
+  nextBtn.addEventListener('click', () => {
+    if (currentStep < totalSteps - 1) showStep(currentStep + 1);
+  });
+  prevBtn.addEventListener('click', () => {
+    if (currentStep > 0) showStep(currentStep - 1);
+  });
   $('startBattleBtn').addEventListener('click', () => {
     $('introOverlay').classList.add('hidden');
     showYourTurn();
     bgMusic.play().catch(() => {});
   });
+  $('replayTutorialBtn').addEventListener('click', () => {
+    showStep(0);
+  });
+  introDots.forEach(dot => {
+    dot.addEventListener('click', () => showStep(parseInt(dot.dataset.dot, 10)));
+  });
+  showStep(0);
   _preloadResolve();
 });
 } // end startPreloading
@@ -856,8 +907,8 @@ function playHealAnimation() {
     userDefaultAnim.stop();
     playSfx('assets/Burbuja.mp3');
     await userHealAnim.playOnce();
-    canvas.classList.remove('z-front');
     canvas.classList.add('shield-glow');
+    canvas.classList.remove('z-front');
     userDefaultAnim.startLoop();
     resolve();
   });
@@ -865,6 +916,19 @@ function playHealAnimation() {
 
 function removeShieldGlow() {
   $('userCanvas').classList.remove('shield-glow');
+  // Merge heal segment into main bar and dissolve
+  const healFill = $('playerHealFill');
+  const fill = $('playerHearts').querySelector('.hp-bar-fill');
+  if (healFill && _healBase >= 0) {
+    // Extend main bar to cover the heal portion
+    const totalPct = parseFloat(fill.style.width) + parseFloat(healFill.style.width);
+    fill.style.width = totalPct + '%';
+    fill.classList.remove('healing');
+    // Fade out heal fill
+    healFill.style.transition = 'opacity 0.6s ease';
+    healFill.style.opacity = '0';
+    _healBase = -1;
+  }
 }
 
 function delay(ms) {

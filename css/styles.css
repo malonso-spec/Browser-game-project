@@ -12,13 +12,13 @@ body {
     radial-gradient(circle at center, transparent 0%, #000 90%),
     url('../assets/smiley-pattern.png');
   background-size: 100% 100%, 120px 120px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Figtree', sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   padding: 15px;
-  padding-top: 1.5dvh;
+  padding-top: 1dvh;
   color: #fff;
 }
 
@@ -71,7 +71,7 @@ h1 {
   width: clamp(200px, 40vw, 320px);
   padding: 10px 16px;
   font-size: 1rem;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Figtree', sans-serif;
   background: rgba(255, 255, 255, 0.08);
   border: 2px solid rgba(255, 255, 255, 0.25);
   border-radius: 8px;
@@ -353,6 +353,16 @@ h1 {
 .mute-btn.muted .mute-icon--off { display: block; }
 
 
+/* Game stage — single proportional wrapper */
+.game-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(95vw, 108dvh);
+  flex: 1;
+  min-height: 0;
+}
+
 /* Game logo above arena */
 .game-logo {
   display: flex;
@@ -369,8 +379,7 @@ h1 {
 /* Screen housing — festival LED truss frame */
 .screen-housing {
   position: relative;
-  width: min(92vw, 110dvh);
-  margin-bottom: 10px;
+  width: 100%;
   padding: 12px;
   border: 2px solid #444;
   border-radius: 3px;
@@ -536,26 +545,10 @@ h1 {
   transition: filter 0.5s ease;
 }
 
-/* Shield glow — #7964FF tint on MC + thin outline after heal */
+/* Shield glow — #5f5ff6 steady purple tint on MC after heal */
 .shield-glow {
-  filter: sepia(0.35) saturate(3) hue-rotate(220deg) brightness(1.1)
-          drop-shadow(0 0 4px rgba(121, 100, 255, 0.9))
-          drop-shadow(0 0 10px rgba(121, 100, 255, 0.5));
-  transition: filter 0.3s ease;
-  animation: shieldPulse 1.8s ease-in-out infinite;
-}
-
-@keyframes shieldPulse {
-  0%, 100% {
-    filter: sepia(0.35) saturate(3) hue-rotate(220deg) brightness(1.1)
-            drop-shadow(0 0 4px rgba(121, 100, 255, 0.9))
-            drop-shadow(0 0 10px rgba(121, 100, 255, 0.5));
-  }
-  50% {
-    filter: sepia(0.4) saturate(3.2) hue-rotate(220deg) brightness(1.15)
-            drop-shadow(0 0 6px rgba(121, 100, 255, 1))
-            drop-shadow(0 0 14px rgba(121, 100, 255, 0.6));
-  }
+  filter: sepia(0.3) saturate(3) hue-rotate(210deg) brightness(1.05)
+          drop-shadow(0 0 6px rgba(95, 95, 246, 0.6));
 }
 
 /* Arena tremor effect — shakes content only, not the frame */
@@ -677,11 +670,14 @@ h1 {
   position: absolute;
   top: 0;
   height: 100%;
-  background: rgba(255, 105, 180, 0.9);
-  border-radius: 4px;
+  background: #5f5ff6;
+  border-radius: 0 4px 4px 0;
   opacity: 0;
   transition: opacity 0.6s ease;
   pointer-events: none;
+}
+.hp-bar-fill.healing {
+  border-radius: 4px 0 0 4px;
 }
 
 .hp-pct {
@@ -766,7 +762,7 @@ h1 {
   gap: 10px;
   flex-wrap: wrap;
   justify-content: center;
-  max-width: min(88vw, 106dvh);
+  width: 100%;
   margin-top: -60px;
   margin-bottom: 12px;
   padding: 16px;
@@ -787,8 +783,8 @@ h1 {
 }
 
 .card {
-  width: clamp(100px, 17dvh, 270px);
-  height: clamp(140px, 24dvh, 378px);
+  width: clamp(80px, min(17dvh, 16vw), 270px);
+  height: clamp(112px, min(24dvh, 22.4vw), 378px);
   background: linear-gradient(145deg, #2d3748, #1a202c);
   border: 3px solid #868686;
   border-radius: 2px;
@@ -805,7 +801,7 @@ h1 {
 }
 
 .card.attack {
-  background: url('../assets/cards/attack.png') center/cover no-repeat;
+  background: url('../assets/cards/attack.jpg') center/cover no-repeat;
 }
 
 .card:hover:not(.used):not(.disabled) {
@@ -814,13 +810,13 @@ h1 {
 }
 
 .card.bonus-match {
-  background: url('../assets/cards/rock-10.png') center/cover no-repeat;
+  background: url('../assets/cards/rock-30.jpg') center/cover no-repeat;
 }
 .card.bonus-match.turn-2 {
-  background: url('../assets/cards/rock-20.png') center/cover no-repeat;
+  background: url('../assets/cards/rock-40.jpg') center/cover no-repeat;
 }
 .card.bonus-match.turn-3 {
-  background: url('../assets/cards/rock-30.png') center/cover no-repeat;
+  background: url('../assets/cards/rock-50.jpg') center/cover no-repeat;
 }
 
 .card.bonus-match:not(.used):not(.disabled) {
@@ -890,7 +886,7 @@ h1 {
 }
 
 .card.heal {
-  background: url('../assets/cards/Protection.png') center/cover no-repeat;
+  background: url('../assets/cards/protection.jpg') center/cover no-repeat;
 }
 
 .card.heal .card-icon,
@@ -967,25 +963,146 @@ h1 {
   color: #fbbf24;
   text-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
 }
-.intro-content ul {
-  text-align: left;
-  list-style: none;
-  padding: 0;
+/* Step-by-step instructions */
+.intro-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
   margin-bottom: 24px;
 }
-.intro-content li {
-  font-size: 0.9rem;
-  padding: 6px 0;
-  padding-left: 16px;
-  position: relative;
+.intro-steps { min-height: 80px; flex: 1; }
+.intro-step { display: none; }
+.intro-step.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80px; }
+.intro-step p {
+  font-size: 0.95rem;
   color: #e2e8f0;
-  line-height: 1.4;
+  line-height: 1.5;
+  text-align: center;
+  padding: 0 10px;
 }
-.intro-content li::before {
-  content: '▸';
-  position: absolute;
-  left: 0;
+.intro-nav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+.intro-nav-btn img {
+  width: 48px;
+  height: 56px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+.intro-nav-btn:hover img { opacity: 1; }
+.intro-nav-prev img { transform: scaleX(-1); }
+.intro-dots { display: flex; gap: 8px; align-items: center; justify-content: center; margin-bottom: 20px; }
+.intro-battle-btn { margin-top: 4px; }
+.intro-battle-btn.hidden { display: none; }
+.intro-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+.intro-dot.active { background: #fbbf24; transform: scale(1.3); }
+
+/* Step number circle */
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #fbbf24;
   color: #fbbf24;
+  font-family: 'Figtree', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+/* Step diagram */
+.step-diagram {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+.step-diagram svg {
+  width: 180px;
+  height: 100px;
+}
+
+/* Final step buttons */
+.intro-final-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+.intro-final-btns .btn {
+  min-width: 200px;
+  text-align: center;
+}
+.intro-final-btns .btn--secondary {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.8);
+}
+
+/* Attack animation — card flies up, hit flash */
+[data-anim="attack"] .dia-attack-card {
+  animation: attackSlide 2s ease-in-out infinite;
+}
+[data-anim="attack"] .dia-hit {
+  animation: attackHit 2s ease-in-out infinite;
+}
+@keyframes attackSlide {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  30% { transform: translateY(-25px); opacity: 1; }
+  50% { transform: translateY(-25px); opacity: 1; }
+  70% { transform: translateY(0); opacity: 1; }
+}
+@keyframes attackHit {
+  0%, 25% { opacity: 0; r: 8; }
+  35% { opacity: 0.9; r: 14; }
+  50% { opacity: 0; r: 8; }
+  100% { opacity: 0; }
+}
+
+/* Rock Invocation — card pulses gold 3 times */
+[data-anim="rock"] .dia-rock-card {
+  animation: rockPulse 2.4s ease-in-out infinite;
+}
+@keyframes rockPulse {
+  0%, 100% { fill: #fbbf24; filter: none; }
+  15% { fill: #fff; filter: drop-shadow(0 0 6px #fbbf24); }
+  30% { fill: #fbbf24; filter: none; }
+  45% { fill: #fff; filter: drop-shadow(0 0 10px #fbbf24); }
+  60% { fill: #fbbf24; filter: none; }
+  75% { fill: #fff; filter: drop-shadow(0 0 14px #fbbf24); }
+  90% { fill: #fbbf24; filter: none; }
+}
+
+/* Shield — bubble card pulses purple */
+[data-anim="shield"] .dia-shield-card {
+  animation: shieldPulse 2.4s ease-in-out infinite;
+}
+@keyframes shieldPulse {
+  0%, 100% { fill: #b464ff; filter: none; }
+  15% { fill: #fff; filter: drop-shadow(0 0 6px #b464ff); }
+  30% { fill: #b464ff; filter: none; }
+  45% { fill: #fff; filter: drop-shadow(0 0 10px #b464ff); }
+  60% { fill: #b464ff; filter: none; }
+  75% { fill: #fff; filter: drop-shadow(0 0 14px #b464ff); }
+  90% { fill: #b464ff; filter: none; }
 }
 
 .btn {
@@ -997,7 +1114,7 @@ h1 {
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: #fff;
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Figtree', sans-serif;
   transition: transform 0.2s;
 }
 
