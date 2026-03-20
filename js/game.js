@@ -10,6 +10,7 @@ const game = {
   shieldActive: false,
   heavyUsed: false,
   isDrunk: false,
+  earlyEventUsed: false,  // T1-T3: once Drunk or Heavy happens, the other is blocked
   consecutiveHits: 0,
   critCyclePos: 0       // 0=30, 1=40, 2=50 — resets when Rock Invocation is used
 };
@@ -32,6 +33,7 @@ function init() {
     shieldActive: false,
     heavyUsed: false,
     isDrunk: false,
+    earlyEventUsed: false,
     consecutiveHits: 0,
     critCyclePos: 0
   });
@@ -142,12 +144,13 @@ async function playCard(id) {
   if (game.shieldActive) {
     enemyDmg = ENEMY_DMG_BLOCKED;
     game.shieldActive = false;
-  } else if (!game.heavyUsed) {
+  } else if (!game.heavyUsed && !(game.turn <= 3 && game.earlyEventUsed)) {
     const heavyChance = game.turn <= 3 ? ENEMY_CRIT_CHANCE_EARLY : ENEMY_CRIT_CHANCE_LATE;
     if (Math.random() < heavyChance) {
       enemyDmg = ENEMY_CRIT_DMG;
       heavyHappened = true;
       game.heavyUsed = true;
+      if (game.turn <= 3) game.earlyEventUsed = true;
     } else {
       enemyDmg = ENEMY_DMG;
     }
@@ -175,13 +178,14 @@ async function playCard(id) {
   // --- Drunk mechanic ---
   if (!game.isDrunk) {
     if (game.turn <= 3) {
-      // T1-T3: Drunk OR Heavy, never both on the same turn
-      if (!heavyHappened) {
+      // T1-T3: Drunk OR Heavy, never both in the entire T1-T3 phase
+      if (!heavyHappened && !game.earlyEventUsed) {
         game.consecutiveHits++;
         const chanceIndex = Math.min(game.consecutiveHits - 1, 2);
         if (Math.random() < DRUNK_CHANCES[chanceIndex]) {
           game.isDrunk = true;
           game.consecutiveHits = 0;
+          game.earlyEventUsed = true;
           showDrunkBanner();
           $('drunkStatus').textContent = '\uD83C\uDF7A DRUNK \u2014 Attacks deal 50% damage';
           $('drunkStatus').classList.remove('hidden');
