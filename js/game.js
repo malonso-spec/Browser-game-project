@@ -186,7 +186,6 @@ async function playCard(id) {
           game.isDrunk = true;
           game.consecutiveHits = 0;
           game.earlyEventUsed = true;
-          showDrunkBanner();
           $('drunkStatus').textContent = '\uD83C\uDF7A DRUNK \u2014 Attacks deal 50% damage';
           $('drunkStatus').classList.remove('hidden');
         }
