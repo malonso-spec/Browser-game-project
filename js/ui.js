@@ -82,12 +82,11 @@ function updateHearts(containerId, hp) {
   }
 }
 
-function updateUI(playerHP, enemyHP, turn, usedCards) {
+function updateUI(playerHP, enemyHP, turn) {
   updateHearts('playerHearts', playerHP);
   updateHearts('enemyHearts', enemyHP);
   $('turnCount').textContent = turn;
   $('currentTurn').textContent = turn;
-  $('cardsLeft').textContent = 5 - usedCards.length;
 }
 
 function showHealFill(oldHP, newHP) {
@@ -108,31 +107,47 @@ let cardsDealt = false;
 
 function renderCards(game) {
   const container = $('cards');
-  const bonusCard = STATE_CARD_MAP[game.enemyState];
+  const critDmg = getCritDmg();
+
+  // SVG shapes for each card type
+  const shapes = {
+    attack: `<svg viewBox="0 0 80 80" class="card-shape"><polygon points="40,8 72,68 8,68" fill="#f97316"/></svg>`,
+    crit: `<svg viewBox="0 0 80 80" class="card-shape"><polygon points="40,4 47,28 72,28 52,44 59,68 40,54 21,68 28,44 8,28 33,28" fill="#fbbf24"/></svg>`,
+    heal: `<svg viewBox="0 0 80 80" class="card-shape"><rect x="30" y="12" width="20" height="56" rx="3" fill="#ef4444"/><rect x="12" y="30" width="56" height="20" rx="3" fill="#ef4444"/></svg>`,
+    food: `<svg viewBox="0 0 80 80" class="card-shape"><circle cx="40" cy="40" r="28" fill="#4ade80"/><circle cx="40" cy="40" r="18" fill="#111" opacity="0.3"/></svg>`
+  };
 
   container.innerHTML = CARDS.map(c => {
-    const isUsed = game.usedCards.includes(c.id);
-    const isBonusCard = c.id === bonusCard;
+    const available = isCardAvailable(c.id);
     const cls = ['card'];
-    if (!c.isHeal) cls.push('attack');
-    if (isUsed) cls.push('used');
+
+    if (c.type === 'attack') cls.push('attack');
+    if (c.type === 'crit') cls.push('crit');
+    if (c.type === 'heal') cls.push('heal');
+    if (c.type === 'food') cls.push('food');
+    if (!available) cls.push('used');
     if (game.isProcessing) cls.push('disabled');
-    if (isBonusCard) {
-      cls.push('bonus-match');
-      if (game.turn >= 2) cls.push(`turn-${game.turn}`);
-    }
-    if (c.isHeal) cls.push('heal');
     if (cardsDealt) cls.push('dealt');
+
+    // Effect label
+    let effect = '';
+    if (c.type === 'attack') {
+      const dmg = game.isDrunk ? Math.round(c.baseDmg * 0.5) : c.baseDmg;
+      effect = `Damage: ${dmg}p`;
+    } else if (c.type === 'crit') {
+      const dmg = game.isDrunk ? Math.round(critDmg * 0.5) : critDmg;
+      effect = `Damage: ${dmg}p`;
+    } else if (c.type === 'heal') {
+      effect = `Protection: ${c.heal}p`;
+    } else if (c.type === 'food') {
+      effect = `Cures drunk`;
+    }
 
     return `
       <div class="${cls.join(' ')}" onclick="playCard('${c.id}')" data-id="${c.id}">
-        <span class="card-icon">${c.icon}</span>
         <span class="card-name">${c.name}</span>
-        ${c.isHeal
-          ? `<span class="card-damage"><strong>+${c.heal}p</strong> HP</span>`
-          : `<span class="card-damage">Damage: <strong>${c.baseDmg}p</strong></span>
-             ${c.hasBonus ? `<span class="card-bonus">+Bonus si ${c.state}</span>` : ''}`
-        }
+        ${shapes[c.type] || ''}
+        <span class="card-effect">${effect}</span>
       </div>`;
   }).join('');
 }
@@ -158,6 +173,14 @@ function showCritAlert() {
   const el = $('critAlert');
   el.classList.remove('hidden');
   playSfx('assets/Heavy.mp3');
+  setTimeout(() => el.classList.add('hidden'), 1200);
+}
+
+function showDrunkBanner() {
+  const el = $('drunkBanner');
+  el.classList.add('hidden');
+  void el.offsetWidth;
+  el.classList.remove('hidden');
   setTimeout(() => el.classList.add('hidden'), 1200);
 }
 
@@ -545,11 +568,11 @@ const phase1Animators = [bgAnim, userDefaultAnim, botDefaultAnim]; // idle — n
 const phase2Animators = [userAttackAnim, userAttackRevAnim, userDefenseAnim, botAttackAnim, botDefenseAnim, userRockAttackAnim, lightningAnim, userHealAnim]; // combat — loaded in background
 const allAnimators = [...phase1Animators, ...phase2Animators];
 const cardImageSrcs = [
-  'assets/cards/attack.png',
-  'assets/cards/rock-10.png',
-  'assets/cards/rock-20.png',
-  'assets/cards/rock-30.png',
-  'assets/cards/Protection.png'
+  'assets/cards/attack.jpg',
+  'assets/cards/rock-30.jpg',
+  'assets/cards/rock-40.jpg',
+  'assets/cards/rock-50.jpg',
+  'assets/cards/protection.jpg'
 ];
 const phase1Frames = phase1Animators.reduce((sum, a) => sum + a.count, 0) + cardImageSrcs.length;
 let loadedFrames = 0;

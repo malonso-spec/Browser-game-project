@@ -724,9 +724,49 @@ h1 {
   margin-top: 1px;
 }
 
-/* Enemy state */
+/* Enemy state (legacy — hidden) */
 .enemy-state {
   display: none;
+}
+
+/* Drunk status indicator */
+.drunk-status {
+  position: fixed;
+  bottom: 185px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  padding: 5px 18px;
+  border-radius: 6px;
+  background: rgba(251, 191, 36, 0.35);
+  border: 1px solid #fbbf24;
+  color: #fbbf24;
+  font-size: clamp(0.65rem, 1.3dvh, 0.9rem);
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+.drunk-status.hidden {
+  display: none;
+}
+
+/* Drunk banner popup */
+.drunk-banner {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 50;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #fbbf24;
+  text-shadow: 0 0 30px rgba(251, 191, 36, 0.8), 0 2px 8px rgba(0,0,0,0.6);
+  white-space: nowrap;
+}
+.drunk-banner:not(.hidden) {
+  animation: critPop 1.2s ease-out forwards;
 }
 
 .turn-info {
@@ -782,12 +822,13 @@ h1 {
   opacity: 0.6;
 }
 
+/* --- Card base --- */
 .card {
   width: clamp(80px, min(17dvh, 16vw), 270px);
   height: clamp(112px, min(24dvh, 22.4vw), 378px);
-  background: linear-gradient(145deg, #2d3748, #1a202c);
-  border: 3px solid #868686;
-  border-radius: 2px;
+  background: #111;
+  border: 2px solid #333;
+  border-radius: 6px;
   cursor: pointer;
   transition: transform 0.12s, opacity 0.12s, box-shadow 0.12s, border-color 0.12s;
   opacity: 0;
@@ -795,104 +836,69 @@ h1 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
+  justify-content: space-between;
+  padding: clamp(6px, 1.2dvh, 14px) clamp(4px, 0.8dvh, 10px);
   position: relative;
-}
-
-.card.attack {
-  background: url('../assets/cards/attack.jpg') center/cover no-repeat;
+  box-sizing: border-box;
 }
 
 .card:hover:not(.used):not(.disabled) {
   transform: translateY(-14px) scale(1.06);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
 }
 
-.card.bonus-match {
-  background: url('../assets/cards/rock-30.jpg') center/cover no-repeat;
+/* --- Card type borders --- */
+.card.attack { border-color: #f97316; }
+.card.crit { border-color: #fbbf24; box-shadow: 0 0 12px rgba(251, 191, 36, 0.3); }
+.card.heal { border-color: #ef4444; }
+.card.food { border-color: #4ade80; }
+
+/* --- Card name (top) --- */
+.card-name {
+  font-family: 'Figtree', sans-serif;
+  font-size: clamp(0.5rem, 1dvh, 0.8rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  text-align: center;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
 }
-.card.bonus-match.turn-2 {
-  background: url('../assets/cards/rock-40.jpg') center/cover no-repeat;
-}
-.card.bonus-match.turn-3 {
-  background: url('../assets/cards/rock-50.jpg') center/cover no-repeat;
+.card.attack .card-name { color: #f97316; }
+.card.crit .card-name { color: #fbbf24; }
+.card.heal .card-name { color: #ef4444; }
+.card.food .card-name { color: #4ade80; }
+
+/* --- Card shape (center) --- */
+.card-shape {
+  width: clamp(36px, 7dvh, 80px);
+  height: clamp(36px, 7dvh, 80px);
+  flex-shrink: 0;
 }
 
-.card.bonus-match:not(.used):not(.disabled) {
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+/* --- Card effect (bottom) --- */
+.card-effect {
+  font-family: 'Figtree', sans-serif;
+  font-size: clamp(0.45rem, 0.9dvh, 0.7rem);
+  font-weight: 700;
+  text-align: center;
+  color: #94a3b8;
 }
 
-.card.attack.bonus-match:not(.used):not(.disabled) {
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
-}
-
+/* --- States --- */
 .card.dealt {
   opacity: 1;
   transform: translateY(0);
 }
 
 .card.used {
-  filter: grayscale(1) brightness(0.6);
+  filter: grayscale(1) brightness(0.4);
   cursor: not-allowed;
   transform: scale(0.92);
 }
 
 .card.disabled {
-  filter: grayscale(1) brightness(0.7);
+  filter: grayscale(0.8) brightness(0.5);
   cursor: not-allowed;
-}
-
-.card-icon {
-  font-size: 1.8rem;
-}
-
-.card.attack .card-icon {
-  display: none;
-}
-
-.card-name {
-  font-size: 0.65rem;
-  font-weight: bold;
-  text-align: center;
-  color: #e2e8f0;
-}
-
-.card.attack .card-name {
-  display: none;
-}
-
-.card-damage {
-  font-size: 0.75rem;
-  color: #94a3b8;
-}
-
-.card.attack .card-damage {
-  display: none;
-}
-
-.card-damage strong {
-  color: #ff6b6b;
-}
-
-.card-bonus {
-  font-size: 0.6rem;
-  color: #fbbf24;
-  opacity: 0.8;
-}
-
-.card.attack .card-bonus {
-  display: none;
-}
-
-.card.heal {
-  background: url('../assets/cards/protection.jpg') center/cover no-repeat;
-}
-
-.card.heal .card-icon,
-.card.heal .card-name,
-.card.heal .card-damage {
-  display: none;
 }
 
 /* Result overlay */

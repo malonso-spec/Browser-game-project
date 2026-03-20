@@ -1,23 +1,16 @@
 // --- Game Configuration ---
-const STATES = ['Euphoric', 'Drunk', 'Overwhelmed', 'Dazed'];
-
-const STATE_CARD_MAP = {
-  'Euphoric': 'A',
-  'Drunk': 'A',
-  'Overwhelmed': 'A',
-  'Dazed': 'A'
-};
-
 const CARDS = [
-  { id: 'A', name: 'Quick Strike', icon: '⚡', baseDmg: 20, state: 'Euphoric', hasBonus: true },
-  { id: 'B', name: 'Power Hit', icon: '💪', baseDmg: 20, state: 'Drunk', hasBonus: true },
-  { id: 'C', name: 'Critical Blow', icon: '💥', baseDmg: 20, state: 'Overwhelmed', hasBonus: true },
-  { id: 'D', name: 'Devastation', icon: '🔥', baseDmg: 20, state: 'Dazed', hasBonus: true },
-  { id: 'R', name: 'Recovery', icon: '💚', heal: 25, isHeal: true }
+  { id: 'A1', name: 'Stunning Dance', type: 'attack', baseDmg: 25 },
+  { id: 'A2', name: 'Stunning Dance', type: 'attack', baseDmg: 25 },
+  { id: 'CRIT', name: 'Rock Invocation', type: 'crit' },
+  { id: 'R', name: 'Bubble Gum', type: 'heal', heal: 25 },
+  { id: 'F', name: 'Food', type: 'food' }
 ];
 
-const CRIT_CHANCE = 0.33;
+const CRIT_CYCLE_DMG = [30, 40, 50]; // damage per position in 3-turn cycle (T1/T2/T3, T4/T5/T6, ...)
 const ENEMY_DMG = 25;
 const ENEMY_DMG_BLOCKED = 10;
 const ENEMY_CRIT_DMG = 50;
-const BONUS_PER_TURN = { 1: 10, 2: 20, 3: 30 };
+const ENEMY_CRIT_CHANCE_EARLY = 0.33;  // Heavy chance T1-T3
+const ENEMY_CRIT_CHANCE_LATE = 0.40;   // Heavy chance T4+
+const DRUNK_CHANCES = [0.33, 0.66, 1.0]; // by consecutive enemy hit count

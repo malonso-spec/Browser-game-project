@@ -123,7 +123,7 @@
       <div class="fighter-name">Beer Provider</div>
     </div>
 
-    <div class="bonus-indicator bonus-available" id="bonusIndicator">⚡ Bonus: T1 +10p | T2 +20p | T3 +30p</div>
+    <div class="bonus-indicator bonus-available" id="bonusIndicator">⚡ Rock Invocation: 30p</div>
   </div>
   </div>
 
@@ -135,7 +135,7 @@
   </div>
 
   <div class="hint">
-    💡 <strong>Hint:</strong> The enemy is <span class="state-hint" id="stateHint">...</span> — Find the right card to trigger the bonus!
+    💡 <strong>Hint:</strong> Use Food to cure Drunk status and reset the hit counter!
   </div>
 
 <div class="result hidden" id="result">
@@ -158,8 +158,10 @@
     </div>
   </div>
 
+  <div class="drunk-status hidden" id="drunkStatus"></div>
   <div class="crit-alert hidden" id="critAlert"><img src="assets/Heavy.png" alt="Heavy!"></div>
   <div class="your-turn-banner hidden" id="yourTurnBanner"><img src="assets/your-turn.png" alt="Your Turn!"></div>
+  <div class="drunk-banner hidden" id="drunkBanner">🍺 DRUNK!</div>
 
   <div class="intro-overlay" id="introOverlay">
     <div class="intro-content">
@@ -169,49 +171,48 @@
         <div class="intro-steps">
           <div class="intro-step active" data-step="0">
             <span class="step-number">1</span>
-            <p>Play your cards to crush the enemy</p>
+            <p>Use <strong>Stunning Dance</strong> (x2) to deal 25 damage each turn. <strong>Rock Invocation</strong> hits harder: 30/40/50 and reloads every 3 turns</p>
             <div class="step-diagram" data-anim="attack">
               <svg viewBox="0 0 200 120" fill="none">
                 <rect x="10" y="5" width="180" height="80" rx="6" stroke="#555" stroke-width="2"/>
-                <rect class="dia-card dia-c1" x="25" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card dia-c2" x="55" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card dia-c3" x="85" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card dia-c4" x="115" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card dia-c5" x="145" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-attack-card" x="85" y="68" width="20" height="32" rx="3" fill="#fbbf24"/>
+                <rect class="dia-card dia-c1" x="15" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card dia-c2" x="45" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card dia-c3" x="75" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card dia-c4" x="105" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card dia-c5" x="135" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-attack-card" x="45" y="68" width="20" height="32" rx="3" fill="#fbbf24"/>
                 <circle class="dia-hit" cx="100" cy="25" r="8" fill="#fbbf24" opacity="0"/>
               </svg>
             </div>
           </div>
           <div class="intro-step" data-step="1">
             <span class="step-number">2</span>
-            <p><strong>Rock Invocation</strong> charges up each turn and hits harder every time... but it only lasts 3 turns, don't sleep on it</p>
-            <div class="step-diagram" data-anim="rock">
+            <p><strong>Bubble Gum</strong> recovers 25 HP + shield (blocks next attack to 10 dmg). Single use!</p>
+            <div class="step-diagram" data-anim="shield">
               <svg viewBox="0 0 200 120" fill="none">
                 <rect x="10" y="5" width="180" height="80" rx="6" stroke="#555" stroke-width="2"/>
-                <rect class="dia-card" x="25" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="55" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="85" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="115" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="145" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-rock-card" x="25" y="68" width="20" height="32" rx="3" fill="#fbbf24"/>
-                <text class="dia-rock-txt" x="35" y="88" text-anchor="middle" font-size="9" font-weight="700" fill="#000">⚡</text>
+                <rect class="dia-card" x="15" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="45" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="75" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="105" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="135" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-shield-card" x="105" y="68" width="20" height="32" rx="3" fill="#b464ff"/>
+                <text class="dia-shield-txt" x="115" y="88" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">&#9829;</text>
               </svg>
             </div>
           </div>
           <div class="intro-step" data-step="2">
             <span class="step-number">3</span>
-            <p>Use <strong>Bubble Gum</strong> to recover 25 HP and activate a shield that blocks part of the next enemy attack</p>
-            <div class="step-diagram" data-anim="shield">
+            <p>Getting hit can make you <strong>Drunk</strong> (attacks deal 50% dmg). Use <strong>Food</strong> to cure it!</p>
+            <div class="step-diagram" data-anim="rock">
               <svg viewBox="0 0 200 120" fill="none">
                 <rect x="10" y="5" width="180" height="80" rx="6" stroke="#555" stroke-width="2"/>
-                <rect class="dia-card" x="25" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="55" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="85" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="115" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="145" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-shield-card" x="145" y="68" width="20" height="32" rx="3" fill="#b464ff"/>
-                <text class="dia-shield-txt" x="155" y="88" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">♥</text>
+                <rect class="dia-card" x="15" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="45" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="75" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-card" x="105" y="68" width="20" height="32" rx="3" fill="#666"/>
+                <rect class="dia-rock-card" x="135" y="68" width="20" height="32" rx="3" fill="#4ade80"/>
+                <text class="dia-rock-txt" x="145" y="88" text-anchor="middle" font-size="9" font-weight="700" fill="#000">&#9670;</text>
               </svg>
             </div>
           </div>

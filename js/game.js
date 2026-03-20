@@ -5,33 +5,44 @@ const game = {
   playerHP: 100,
   enemyHP: 100,
   turn: 1,
-  usedCards: [],
-  enemyState: '',
-  bonusUsed: false,
+  consumedCards: [],    // permanently consumed (R only)
   isProcessing: false,
   shieldActive: false,
-  enemyCritUsed: false
+  heavyUsed: false,
+  isDrunk: false,
+  consecutiveHits: 0,
+  critCyclePos: 0       // 0=30, 1=40, 2=50 — resets when Rock Invocation is used
 };
+
+function getCritDmg() {
+  return CRIT_CYCLE_DMG[game.critCyclePos];
+}
+
+function isCardAvailable(id) {
+  return !game.consumedCards.includes(id);
+}
 
 function init() {
   Object.assign(game, {
     playerHP: 100,
     enemyHP: 100,
     turn: 1,
-    usedCards: [],
-    bonusUsed: false,
+    consumedCards: [],
     isProcessing: false,
     shieldActive: false,
-    enemyCritUsed: false,
-    enemyState: STATES[Math.floor(Math.random() * STATES.length)]
+    heavyUsed: false,
+    isDrunk: false,
+    consecutiveHits: 0,
+    critCyclePos: 0
   });
 
   _healBase = -1;
   $('playerHealFill').style.opacity = '0';
-  updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
-  $('enemyState').textContent = 'State: ' + game.enemyState;
-  $('stateHint').textContent = game.enemyState;
+  updateUI(game.playerHP, game.enemyHP, game.turn);
+  $('drunkStatus').textContent = '';
+  $('drunkStatus').classList.add('hidden');
   $('result').classList.add('hidden');
+
   // Clean up any mid-flight animation state
   const botCanvas = $('botCanvas');
   const userCanvas = $('userCanvas');
@@ -39,6 +50,7 @@ function init() {
   botCanvas.style.animation = '';
   userCanvas.classList.remove('defeated', 'shield-glow');
   userCanvas.style.animation = '';
+
   // Stop all combat animators so they don't draw over idle sprites
   userAttackAnim.stop();
   userAttackRevAnim.stop();
@@ -49,129 +61,156 @@ function init() {
   botAttackAnim.stop();
   botDefenseAnim.stop();
   userDefenseAnim.stop();
-  $('bonusIndicator').className = 'bonus-indicator bonus-available';
-  $('bonusIndicator').textContent = '⚡ Bonus: T1 +10p | T2 +20p | T3 +30p';
 
+  updateCritIndicator();
   renderCards(game);
   dealCards();
   startIdleAnimations();
 }
 
+function updateCritIndicator() {
+  const critDmg = getCritDmg();
+  const el = $('bonusIndicator');
+  el.className = 'bonus-indicator bonus-available';
+  el.textContent = '\u26A1 Rock Invocation: ' + critDmg + 'p';
+}
+
 async function playCard(id) {
-  if (game.usedCards.includes(id) || game.isProcessing) return;
+  if (game.isProcessing) return;
   if (game.enemyHP <= 0 || game.playerHP <= 0) return;
+  if (!isCardAvailable(id)) return;
 
   game.isProcessing = true;
-  game.usedCards.push(id);
   const card = CARDS.find(c => c.id === id);
-  const bonusCard = STATE_CARD_MAP[game.enemyState];
 
   renderCards(game);
 
   // --- Resolve card ---
-  if (card.isHeal) {
+  if (card.type === 'attack') {
+    let dmg = card.baseDmg;
+    if (game.isDrunk) dmg = Math.round(dmg * 0.5);
+    game.enemyHP = Math.max(0, game.enemyHP - dmg);
+    shake($('enemyFighter'));
+    await playPlayerAttack(game.enemyHP <= 0, false, () => {
+      updateUI(game.playerHP, game.enemyHP, game.turn);
+    });
+
+  } else if (card.type === 'crit') {
+    let dmg = getCritDmg();
+    if (game.isDrunk) dmg = Math.round(dmg * 0.5);
+    game.enemyHP = Math.max(0, game.enemyHP - dmg);
+    game.critCyclePos = 0; // reset cycle after use
+    shake($('enemyFighter'));
+    await playPlayerAttack(game.enemyHP <= 0, true, () => {
+      updateUI(game.playerHP, game.enemyHP, game.turn);
+    });
+
+  } else if (card.type === 'heal') {
     const oldHP = game.playerHP;
     game.playerHP = Math.min(100, game.playerHP + card.heal);
     game.shieldActive = true;
+    game.consumedCards.push('R');
     showHealFill(oldHP, game.playerHP);
-  } else {
-    let dmg = card.baseDmg;
-    let isBonus = false;
-
-    if (id === bonusCard && !game.bonusUsed && game.turn <= 3) {
-      const bonus = BONUS_PER_TURN[game.turn];
-      dmg += bonus;
-      isBonus = true;
-      game.bonusUsed = true;
-      $('bonusIndicator').className = 'bonus-indicator bonus-used';
-      $('bonusIndicator').textContent = `✓ Bonus T${game.turn}: +${bonus}p`;
-    }
-
-    game.enemyHP = Math.max(0, game.enemyHP - dmg);
-    shake($('enemyFighter'));
-    await playPlayerAttack(game.enemyHP <= 0, isBonus, () => {
-      updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
-    });
-  }
-
-  // Heal path — play bubble animation then update UI
-  if (card.isHeal) {
     await playHealAnimation();
-    updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
+    updateUI(game.playerHP, game.enemyHP, game.turn);
+
+  } else if (card.type === 'food') {
+    if (game.isDrunk) {
+      game.isDrunk = false;
+      game.consecutiveHits = 0;
+      $('drunkStatus').textContent = '';
+      $('drunkStatus').classList.add('hidden');
+    }
+    // If not drunk, Food has no effect (wastes the turn)
+    updateUI(game.playerHP, game.enemyHP, game.turn);
+    await delay(400);
   }
+
+  renderCards(game);
 
   // --- Check enemy defeated ---
   if (game.enemyHP <= 0) {
     await delay(800);
-    endGame(true, game.bonusUsed
-      ? 'You activated the bonus and defeated the enemy!'
-      : 'You defeated the enemy without activating the bonus. The bonus is mandatory to win!');
+    endGame(true, 'You defeated the enemy!');
     return;
   }
 
-  if (game.turn > 3 && !game.bonusUsed) {
-    $('bonusIndicator').className = 'bonus-indicator bonus-missed';
-    $('bonusIndicator').textContent = '✗ Bonus perdido';
-  }
-
-  // --- Enemy counterattack (pause to separate actions) ---
+  // --- Enemy counterattack ---
   await delay(800);
   let enemyDmg;
+  let heavyHappened = false;
   if (game.shieldActive) {
     enemyDmg = ENEMY_DMG_BLOCKED;
     game.shieldActive = false;
-  } else if (!game.enemyCritUsed && Math.random() < CRIT_CHANCE) {
-    enemyDmg = ENEMY_CRIT_DMG;
-    game.enemyCritUsed = true;
+  } else if (!game.heavyUsed) {
+    const heavyChance = game.turn <= 3 ? ENEMY_CRIT_CHANCE_EARLY : ENEMY_CRIT_CHANCE_LATE;
+    if (Math.random() < heavyChance) {
+      enemyDmg = ENEMY_CRIT_DMG;
+      heavyHappened = true;
+      game.heavyUsed = true;
+    } else {
+      enemyDmg = ENEMY_DMG;
+    }
   } else {
     enemyDmg = ENEMY_DMG;
   }
 
   game.playerHP = Math.max(0, game.playerHP - enemyDmg);
   const willKillPlayer = game.playerHP <= 0;
-  const isCrit = enemyDmg === ENEMY_CRIT_DMG;
+  const isCrit = heavyHappened;
   await playEnemyAttack(willKillPlayer, () => {
     if (isCrit) showCritAlert();
     removeShieldGlow();
     shake($('playerFighter'));
-    updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
+    updateUI(game.playerHP, game.enemyHP, game.turn);
   });
 
   // --- Check player defeated ---
   if (game.playerHP <= 0) {
     await delay(800);
-    endGame(false, 'Your HP reached 0%. Try using Recovery strategically!');
+    endGame(false, 'Your HP reached 0%. Use Recovery and Food strategically!');
     return;
+  }
+
+  // --- Drunk mechanic ---
+  if (!game.isDrunk) {
+    if (game.turn <= 3) {
+      // T1-T3: Drunk OR Heavy, never both on the same turn
+      if (!heavyHappened) {
+        game.consecutiveHits++;
+        const chanceIndex = Math.min(game.consecutiveHits - 1, 2);
+        if (Math.random() < DRUNK_CHANCES[chanceIndex]) {
+          game.isDrunk = true;
+          game.consecutiveHits = 0;
+          showDrunkBanner();
+          $('drunkStatus').textContent = '\uD83C\uDF7A DRUNK \u2014 Attacks deal 50% damage';
+          $('drunkStatus').classList.remove('hidden');
+        }
+      }
+    } else {
+      // T4+: Drunk can happen regardless of Heavy
+      game.consecutiveHits++;
+      const chanceIndex = Math.min(game.consecutiveHits - 1, 2);
+      if (Math.random() < DRUNK_CHANCES[chanceIndex]) {
+        game.isDrunk = true;
+        game.consecutiveHits = 0;
+        showDrunkBanner();
+        $('drunkStatus').textContent = '\uD83C\uDF7A DRUNK \u2014 Attacks deal 50% damage';
+        $('drunkStatus').classList.remove('hidden');
+      }
+    }
   }
 
   // --- Next turn ---
   game.turn++;
 
-  // Disable Rock Invocation after turn 3, reactivate a random used card
-  const bonusCardId = STATE_CARD_MAP[game.enemyState];
-  if (game.turn > 3 && !game.usedCards.includes(bonusCardId)) {
-    game.usedCards.push(bonusCardId);
-    // Reactivate a random previously used card (not the bonus card)
-    const reactivatable = game.usedCards.filter(id => id !== bonusCardId);
-    if (reactivatable.length > 0) {
-      const pick = reactivatable[Math.floor(Math.random() * reactivatable.length)];
-      game.usedCards = game.usedCards.filter(id => id !== pick);
-    }
+  // Advance crit cycle if Rock Invocation was NOT used this turn
+  if (card.type !== 'crit') {
+    game.critCyclePos = Math.min(game.critCyclePos + 1, 2);
   }
 
-  // If all cards are used, re-enable a random one (not Recovery nor bonus card)
-  const allCardIds = CARDS.map(c => c.id);
-  const availableCards = allCardIds.filter(id => !game.usedCards.includes(id));
-  if (availableCards.length === 0) {
-    const bonusCardId2 = STATE_CARD_MAP[game.enemyState];
-    const reactivatable2 = game.usedCards.filter(id => id !== 'R' && id !== bonusCardId2);
-    if (reactivatable2.length > 0) {
-      const pick2 = reactivatable2[Math.floor(Math.random() * reactivatable2.length)];
-      game.usedCards = game.usedCards.filter(id => id !== pick2);
-    }
-  }
-
-  updateUI(game.playerHP, game.enemyHP, game.turn, game.usedCards);
+  updateCritIndicator();
+  updateUI(game.playerHP, game.enemyHP, game.turn);
   game.isProcessing = false;
   renderCards(game);
   showYourTurn();
