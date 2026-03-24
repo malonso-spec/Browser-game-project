@@ -10,7 +10,8 @@ const game = {
   shieldActive: false,
   heavyUsed: false,
   isDrunk: false,
-  earlyEventUsed: false,  // T1-T3: once Drunk or Heavy happens, the other is blocked
+  earlyHeavyDone: false,  // T1-T3: Heavy already happened
+  earlyDrunkDone: false,  // T1-T3: Drunk already happened
   consecutiveHits: 0,
   critCyclePos: 0       // 0=30, 1=40, 2=50 — resets when Rock Invocation is used
 };
@@ -33,7 +34,8 @@ function init() {
     shieldActive: false,
     heavyUsed: false,
     isDrunk: false,
-    earlyEventUsed: false,
+    earlyHeavyDone: false,
+    earlyDrunkDone: false,
     consecutiveHits: 0,
     critCyclePos: 0
   });
@@ -141,16 +143,44 @@ async function playCard(id) {
   await delay(800);
   let enemyDmg;
   let heavyHappened = false;
+
+  // T1-T3 guarantee: both Heavy AND Drunk must happen (on different turns)
+  let mustHeavy = false;
+  let mustDrunk = false;
+  if (game.turn <= 3 && !game.shieldActive) {
+    const turnsLeft = 3 - game.turn; // turns remaining after this one
+    const needHeavy = !game.earlyHeavyDone;
+    const needDrunk = !game.earlyDrunkDone && !game.isDrunk;
+    const eventsNeeded = (needHeavy ? 1 : 0) + (needDrunk ? 1 : 0);
+    if (eventsNeeded > 0 && eventsNeeded > turnsLeft) {
+      // Must trigger at least one event this turn to fit both in T1-T3
+      if (needHeavy && needDrunk) {
+        if (Math.random() < 0.5) mustHeavy = true;
+        else mustDrunk = true;
+      } else if (needHeavy) mustHeavy = true;
+      else if (needDrunk) mustDrunk = true;
+    }
+  }
+
   if (game.shieldActive) {
     enemyDmg = ENEMY_DMG_BLOCKED;
     game.shieldActive = false;
-  } else if (!game.heavyUsed && !(game.turn <= 3 && game.earlyEventUsed)) {
-    const heavyChance = game.turn <= 3 ? ENEMY_CRIT_CHANCE_EARLY : ENEMY_CRIT_CHANCE_LATE;
-    if (Math.random() < heavyChance) {
+  } else if (game.turn <= 3 && !game.heavyUsed) {
+    // T1-T3: Heavy with 33% chance (or forced), but not if Drunk is forced this turn
+    if (mustHeavy || (!mustDrunk && Math.random() < ENEMY_CRIT_CHANCE_EARLY)) {
       enemyDmg = ENEMY_CRIT_DMG;
       heavyHappened = true;
       game.heavyUsed = true;
-      if (game.turn <= 3) game.earlyEventUsed = true;
+      game.earlyHeavyDone = true;
+    } else {
+      enemyDmg = ENEMY_DMG;
+    }
+  } else if (!game.heavyUsed && game.turn > 3) {
+    // T4+: Heavy with 40% (if never used in battle)
+    if (Math.random() < ENEMY_CRIT_CHANCE_LATE) {
+      enemyDmg = ENEMY_CRIT_DMG;
+      heavyHappened = true;
+      game.heavyUsed = true;
     } else {
       enemyDmg = ENEMY_DMG;
     }
@@ -178,26 +208,25 @@ async function playCard(id) {
   // --- Drunk mechanic ---
   if (!game.isDrunk) {
     if (game.turn <= 3) {
-      // T1-T3: Drunk OR Heavy, never both in the entire T1-T3 phase
-      if (!heavyHappened && !game.earlyEventUsed) {
+      // T1-T3: Drunk guaranteed, but not on same turn as Heavy
+      if (!heavyHappened && !game.earlyDrunkDone) {
         game.consecutiveHits++;
         const chanceIndex = Math.min(game.consecutiveHits - 1, 2);
-        if (Math.random() < DRUNK_CHANCES[chanceIndex]) {
+        if (mustDrunk || Math.random() < DRUNK_CHANCES[chanceIndex]) {
           game.isDrunk = true;
           game.consecutiveHits = 0;
-          game.earlyEventUsed = true;
+          game.earlyDrunkDone = true;
           $('drunkStatus').textContent = '\uD83C\uDF7A DRUNK \u2014 Attacks deal 50% damage';
           $('drunkStatus').classList.remove('hidden');
         }
       }
-    } else {
-      // T4+: Drunk can happen regardless of Heavy
+    } else if (!heavyHappened) {
+      // T4+: Drunk can happen, but never on the same turn as Heavy
       game.consecutiveHits++;
       const chanceIndex = Math.min(game.consecutiveHits - 1, 2);
       if (Math.random() < DRUNK_CHANCES[chanceIndex]) {
         game.isDrunk = true;
         game.consecutiveHits = 0;
-        showDrunkBanner();
         $('drunkStatus').textContent = '\uD83C\uDF7A DRUNK \u2014 Attacks deal 50% damage';
         $('drunkStatus').classList.remove('hidden');
       }
