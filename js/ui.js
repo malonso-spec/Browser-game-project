@@ -208,6 +208,50 @@ function showResult(win, reason) {
   }, showDelay);
 }
 
+// --- Leaderboard rendering (shared) ---
+function renderLeaderboardHTML(entries, highlightName, highlightScore) {
+  const header = `<div class="lb-row lb-header">
+    <span></span><span>Name</span><span class="lb-score">Score</span><span class="lb-hp">HP</span><span class="lb-turns">Turns</span><span class="lb-time">Time</span>
+  </div>`;
+  const rows = entries.map(e => {
+    const isMe = highlightName && e.name === highlightName && e.score === highlightScore;
+    const time = e.time != null ? formatTime(e.time) : '-';
+    return `<div class="lb-row${isMe ? ' lb-highlight' : ''}">
+      <span class="lb-rank">#${e.rank}</span>
+      <span class="lb-name">${e.name}</span>
+      <span class="lb-score">${e.score}</span>
+      <span class="lb-hp">${e.hp}%</span>
+      <span class="lb-turns">${e.turns}</span>
+      <span class="lb-time">${time}</span>
+    </div>`;
+  }).join('');
+  return header + rows;
+}
+
+// --- Score & Leaderboard (result screen) ---
+async function showScoreAndLeaderboard(score, name) {
+  $('scoreValue').textContent = score;
+  $('scoreDisplay').classList.remove('hidden');
+
+  const entries = await getLeaderboard(10);
+  if (entries.length === 0) return;
+
+  $('leaderboardBody').innerHTML = renderLeaderboardHTML(entries, name, score);
+  $('leaderboard').classList.remove('hidden');
+}
+
+// --- Leaderboard on title screen ---
+async function loadTitleLeaderboard() {
+  const entries = await getLeaderboard(10);
+  const container = $('titleLeaderboard');
+  if (entries.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+  $('titleLeaderboardBody').innerHTML = renderLeaderboardHTML(entries);
+  container.style.display = '';
+}
+
 // --- Outro video ---
 const OUTRO_PAUSE_TIME = 274 / 25; // frame 274 at 25fps ≈ 10.96s
 let _outroPhase = 0; // 0=playing, 1=paused at frame 296, 2=playing rest, 3=ended
@@ -588,6 +632,9 @@ function waitReady(animator) {
 
 // --- Title screen → Name screen ---
 let playerName = 'Player';
+
+// Load leaderboard on title screen
+loadTitleLeaderboard();
 
 $('startGameBtn').addEventListener('click', () => {
   $('titleScreen').classList.add('hidden');

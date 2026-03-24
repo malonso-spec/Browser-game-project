@@ -13,7 +13,9 @@ const game = {
   earlyHeavyDone: false,  // T1-T3: Heavy already happened
   earlyDrunkDone: false,  // T1-T3: Drunk already happened
   consecutiveHits: 0,
-  critCyclePos: 0       // 0=30, 1=40, 2=50 — resets when Rock Invocation is used
+  critCyclePos: 0,      // 0=30, 1=40, 2=50 — resets when Rock Invocation is used
+  startTime: null,       // timestamp when battle starts
+  elapsedSeconds: 0      // seconds elapsed at game end
 };
 
 function getCritDmg() {
@@ -37,7 +39,9 @@ function init() {
     earlyHeavyDone: false,
     earlyDrunkDone: false,
     consecutiveHits: 0,
-    critCyclePos: 0
+    critCyclePos: 0,
+    startTime: Date.now(),
+    elapsedSeconds: 0
   });
 
   _healBase = -1;
@@ -248,8 +252,14 @@ async function playCard(id) {
   showYourTurn();
 }
 
-function endGame(win, reason) {
+async function endGame(win, reason) {
+  game.elapsedSeconds = Math.round((Date.now() - game.startTime) / 1000);
   showResult(win, reason);
+
+  if (win) {
+    const score = await saveScore(playerName, game.playerHP, game.turn, game.elapsedSeconds);
+    showScoreAndLeaderboard(score, playerName);
+  }
 }
 
 function restart() {

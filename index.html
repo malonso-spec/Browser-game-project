@@ -21,6 +21,10 @@
   <div id="titleScreen" class="title-screen">
     <img src="assets/logo.png" alt="Rock Mystery Fest" class="title-logo">
     <button class="btn" id="startGameBtn">Start Game</button>
+    <div class="title-leaderboard" id="titleLeaderboard">
+      <h3 class="leaderboard-title">Top 10 Ranking</h3>
+      <div class="leaderboard-table" id="titleLeaderboardBody"></div>
+    </div>
   </div>
 
   <!-- Name input screen -->
@@ -141,6 +145,14 @@
 <div class="result hidden" id="result">
     <h2 id="resultText"></h2>
     <p id="resultDesc"></p>
+    <div class="score-display hidden" id="scoreDisplay">
+      <span class="score-label">Your Score</span>
+      <span class="score-value" id="scoreValue">0</span>
+    </div>
+    <div class="leaderboard hidden" id="leaderboard">
+      <h3 class="leaderboard-title">Top 10 Ranking</h3>
+      <div class="leaderboard-table" id="leaderboardBody"></div>
+    </div>
     <div class="result-buttons">
       <button class="btn" id="continueBtn" style="display:none">Continue</button>
       <button class="btn btn--secondary" onclick="restart()">Play Again</button>
@@ -233,7 +245,12 @@
     </div>
   </div>
 
+  <!-- Firebase SDK (compat for global script usage) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
   <script src="js/config.js"></script>
+  <script src="js/firebase.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/game.js"></script>
 </body>
