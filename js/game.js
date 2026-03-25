@@ -74,6 +74,7 @@ function init() {
   renderCards(game);
   dealCards();
   startIdleAnimations();
+  trackGameStart(playerName);
 }
 
 function updateCritIndicator() {
@@ -254,6 +255,7 @@ async function playCard(id) {
 
 async function endGame(win, reason) {
   game.elapsedSeconds = Math.round((Date.now() - game.startTime) / 1000);
+  trackGameEnd(playerName, win, game.playerHP, game.turn, game.elapsedSeconds);
   showResult(win, reason);
 
   if (win) {

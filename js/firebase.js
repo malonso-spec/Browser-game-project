@@ -15,6 +15,25 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const analytics = firebase.analytics();
+
+// --- Analytics helpers ---
+function trackGameStart(playerName) {
+  analytics.logEvent('game_start', {
+    player_name: playerName
+  });
+}
+
+function trackGameEnd(playerName, win, hp, turns, seconds) {
+  analytics.logEvent('game_end', {
+    player_name: playerName,
+    result: win ? 'win' : 'lose',
+    hp_remaining: hp,
+    turns: turns,
+    time_seconds: seconds,
+    score: win ? calculateScore(hp, turns, seconds) : 0
+  });
+}
 
 // --- Score formula ---
 // HP score:   remaining HP × 10          (max 1000)
