@@ -134,6 +134,10 @@
   <div class="cards" id="cards"></div>
   </div><!-- end game-stage -->
 
+  <div class="game-timer" id="gameTimer">
+    <img src="assets/timer/0.webp" id="timerM"><img src="assets/timer/colon.webp" class="timer-colon"><img src="assets/timer/0.webp" id="timerS1"><img src="assets/timer/0.webp" id="timerS2">
+  </div>
+
   <div class="sponsor-logo">
     <img src="assets/freepik-logo.png" alt="Freepik">
   </div>
@@ -173,7 +177,7 @@
   <div class="drunk-status hidden" id="drunkStatus"></div>
   <div class="crit-alert hidden" id="critAlert"><img src="assets/Heavy.png" alt="Heavy!"></div>
   <div class="your-turn-banner hidden" id="yourTurnBanner"><img src="assets/your-turn.png" alt="Your Turn!"></div>
-  <div class="drunk-banner hidden" id="drunkBanner">🍺 DRUNK!</div>
+  <div class="drunk-banner hidden" id="drunkBanner"><img src="assets/drunk.png" alt="Drunk!"></div>
 
   <div class="intro-overlay" id="introOverlay">
     <div class="intro-content">
@@ -181,54 +185,76 @@
       <div class="intro-body">
         <button class="intro-nav-btn intro-nav-prev" id="introPrev" style="visibility:hidden"><img src="assets/play-icon.png" alt="Previous"></button>
         <div class="intro-steps">
+          <!-- Step 0: Game overview -->
           <div class="intro-step active" data-step="0">
-            <span class="step-number">1</span>
-            <p>Use <strong>Stunning Dance</strong> (x2) to deal 25 damage each turn. <strong>Rock Invocation</strong> hits harder: 30/40/50 and reloads every 3 turns</p>
-            <div class="step-diagram" data-anim="attack">
-              <svg viewBox="0 0 200 120" fill="none">
-                <rect x="10" y="5" width="180" height="80" rx="6" stroke="#555" stroke-width="2"/>
-                <rect class="dia-card dia-c1" x="15" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card dia-c2" x="45" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card dia-c3" x="75" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card dia-c4" x="105" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card dia-c5" x="135" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-attack-card" x="45" y="68" width="20" height="32" rx="3" fill="#fbbf24"/>
-                <circle class="dia-hit" cx="100" cy="25" r="8" fill="#fbbf24" opacity="0"/>
-              </svg>
+            <div class="tut-overview">
+              <p style="font-size:1.05rem; text-align:center;">Welcome to a <strong style="color:#fbbf24">turn-based battle</strong>!</p>
+              <p style="text-align:center;">Each turn you pick a card to attack, defend or heal. The enemy strikes back automatically after your move.</p>
+              <p style="text-align:center;">Reduce the enemy's HP to <strong style="color:#ef4444">0</strong> before yours runs out. Use your cards wisely!</p>
             </div>
           </div>
+          <!-- Step 1: Stunning Dance -->
           <div class="intro-step" data-step="1">
-            <span class="step-number">2</span>
-            <p><strong>Bubble Gum</strong> recovers 25 HP + shield (blocks next attack to 10 dmg). Single use!</p>
-            <div class="step-diagram" data-anim="shield">
-              <svg viewBox="0 0 200 120" fill="none">
-                <rect x="10" y="5" width="180" height="80" rx="6" stroke="#555" stroke-width="2"/>
-                <rect class="dia-card" x="15" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="45" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="75" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="105" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="135" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-shield-card" x="105" y="68" width="20" height="32" rx="3" fill="#b464ff"/>
-                <text class="dia-shield-txt" x="115" y="88" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">&#9829;</text>
-              </svg>
+            <div class="tut-card-preview">
+              <div class="card attack tut-card">
+                <img class="card-bg" src="assets/cards/stunning-dance.png" alt="" draggable="false">
+                <span class="card-name">Stunning Dance</span>
+                <span class="card-effect">Damage: 25p</span>
+              </div>
+            </div>
+            <div class="tut-info">
+              <h3 style="color:#f97316">Stunning Dance</h3>
+              <p>Your basic attack. Deals <strong>25 damage</strong> to the enemy every turn.</p>
+              <p>This card is <strong>reusable</strong> — you can play it every turn without limit.</p>
             </div>
           </div>
+          <!-- Step 2: Rock Invocation -->
           <div class="intro-step" data-step="2">
-            <span class="step-number">3</span>
-            <p>Getting hit can make you <strong>Drunk</strong> (attacks deal 50% dmg). Use <strong>Food</strong> to cure it!</p>
-            <div class="step-diagram" data-anim="rock">
-              <svg viewBox="0 0 200 120" fill="none">
-                <rect x="10" y="5" width="180" height="80" rx="6" stroke="#555" stroke-width="2"/>
-                <rect class="dia-card" x="15" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="45" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="75" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-card" x="105" y="68" width="20" height="32" rx="3" fill="#666"/>
-                <rect class="dia-rock-card" x="135" y="68" width="20" height="32" rx="3" fill="#4ade80"/>
-                <text class="dia-rock-txt" x="145" y="88" text-anchor="middle" font-size="9" font-weight="700" fill="#000">&#9670;</text>
-              </svg>
+            <div class="tut-card-preview">
+              <div class="card crit charge-1 tut-card">
+                <img class="card-bg" src="assets/cards/rock-invocation.png" alt="" draggable="false">
+                <span class="card-name">Rock Invocation</span>
+                <span class="card-effect">Damage: 30p</span>
+              </div>
+            </div>
+            <div class="tut-info">
+              <h3 style="color:#fbbf24">Rock Invocation</h3>
+              <p>A powerful attack that <strong>charges over time</strong>: 30 → 40 → 50 damage.</p>
+              <p>Using it <strong>resets the charge</strong> back to 30. Wait for maximum impact!</p>
             </div>
           </div>
+          <!-- Step 3: Bubble Gum -->
           <div class="intro-step" data-step="3">
+            <div class="tut-card-preview">
+              <div class="card heal tut-card">
+                <img class="card-bg" src="assets/cards/bubble-gum.png" alt="" draggable="false">
+                <span class="card-name">Bubble Gum</span>
+                <span class="card-effect">Protection: 25p</span>
+              </div>
+            </div>
+            <div class="tut-info">
+              <h3 style="color:#5f5ff6">Bubble Gum</h3>
+              <p>Recovers <strong>25 HP</strong> and activates a <strong>shield</strong> that blocks the next enemy attack to only 10 damage.</p>
+              <p><strong>Single use</strong> — once played, it's gone for the rest of the battle.</p>
+            </div>
+          </div>
+          <!-- Step 4: Campero Boost -->
+          <div class="intro-step" data-step="4">
+            <div class="tut-card-preview">
+              <div class="card food tut-card">
+                <img class="card-bg" src="assets/cards/campero-boost.png" alt="" draggable="false">
+                <span class="card-name">Campero Boost</span>
+                <span class="card-effect">Cures drunk</span>
+              </div>
+            </div>
+            <div class="tut-info">
+              <h3 style="color:#4ade80">Campero Boost</h3>
+              <p>Cures the <strong>Drunk status</strong> and resets the hit counter. If you're not drunk, it wastes your turn.</p>
+              <p>This card is <strong>reusable</strong> — keep it for when you need it.</p>
+            </div>
+          </div>
+          <!-- Step 5: Go to battle -->
+          <div class="intro-step" data-step="5">
             <div class="intro-final-btns">
               <button class="btn" id="startBattleBtn">Go to battle!</button>
               <button class="btn btn--secondary" id="replayTutorialBtn">Back to tutorial</button>
@@ -241,7 +267,10 @@
         <span class="intro-dot active" data-dot="0"></span>
         <span class="intro-dot" data-dot="1"></span>
         <span class="intro-dot" data-dot="2"></span>
+        <span class="intro-dot" data-dot="3"></span>
+        <span class="intro-dot" data-dot="4"></span>
       </div>
+      <button class="intro-skip-btn" id="skipTutorialBtn">Skip</button>
     </div>
   </div>
 

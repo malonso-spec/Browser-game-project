@@ -68,12 +68,16 @@ function init() {
   userHealAnim.stop();
   botAttackAnim.stop();
   botDefenseAnim.stop();
+  botLaughAnim.stop();
+  userFoodAnim.stop();
+  userDrunkAnim.stop();
   userDefenseAnim.stop();
 
   updateCritIndicator();
   renderCards(game);
   dealCards();
   startIdleAnimations();
+  startGameTimer();
   trackGameStart(playerName);
 }
 
@@ -93,6 +97,11 @@ async function playCard(id) {
   const card = CARDS.find(c => c.id === id);
 
   renderCards(game);
+
+  // --- Play drunk reaction at the start of each turn while drunk ---
+  if (game.isDrunk && card.type !== 'food') {
+    await playDrunkReaction();
+  }
 
   // --- Resolve card ---
   if (card.type === 'attack') {
@@ -124,15 +133,13 @@ async function playCard(id) {
     updateUI(game.playerHP, game.enemyHP, game.turn);
 
   } else if (card.type === 'food') {
+    await playFoodAnimation();
     if (game.isDrunk) {
       game.isDrunk = false;
       game.consecutiveHits = 0;
-      $('drunkStatus').textContent = '';
-      $('drunkStatus').classList.add('hidden');
     }
     // If not drunk, Food has no effect (wastes the turn)
     updateUI(game.playerHP, game.enemyHP, game.turn);
-    await delay(400);
   }
 
   renderCards(game);
@@ -221,8 +228,8 @@ async function playCard(id) {
           game.isDrunk = true;
           game.consecutiveHits = 0;
           game.earlyDrunkDone = true;
-          $('drunkStatus').textContent = '\uD83C\uDF7A DRUNK \u2014 Attacks deal 50% damage';
-          $('drunkStatus').classList.remove('hidden');
+          showDrunkBanner();
+          await Promise.all([playDrunkReaction(), playBotLaugh()]);
         }
       }
     } else if (!heavyHappened) {
@@ -232,8 +239,8 @@ async function playCard(id) {
       if (Math.random() < DRUNK_CHANCES[chanceIndex]) {
         game.isDrunk = true;
         game.consecutiveHits = 0;
-        $('drunkStatus').textContent = '\uD83C\uDF7A DRUNK \u2014 Attacks deal 50% damage';
-        $('drunkStatus').classList.remove('hidden');
+        showDrunkBanner();
+        await Promise.all([playDrunkReaction(), playBotLaugh()]);
       }
     }
   }
@@ -254,6 +261,7 @@ async function playCard(id) {
 }
 
 async function endGame(win, reason) {
+  stopGameTimer();
   game.elapsedSeconds = Math.round((Date.now() - game.startTime) / 1000);
   trackGameEnd(playerName, win, game.playerHP, game.turn, game.elapsedSeconds);
   showResult(win, reason);

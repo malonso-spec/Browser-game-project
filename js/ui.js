@@ -109,12 +109,12 @@ function renderCards(game) {
   const container = $('cards');
   const critDmg = getCritDmg();
 
-  // SVG shapes for each card type
-  const shapes = {
-    attack: `<svg viewBox="0 0 80 80" class="card-shape"><polygon points="40,8 72,68 8,68" fill="#f97316"/></svg>`,
-    crit: `<svg viewBox="0 0 80 80" class="card-shape"><polygon points="40,4 47,28 72,28 52,44 59,68 40,54 21,68 28,44 8,28 33,28" fill="#fbbf24"/></svg>`,
-    heal: `<svg viewBox="0 0 80 80" class="card-shape"><rect x="30" y="12" width="20" height="56" rx="3" fill="#ef4444"/><rect x="12" y="30" width="56" height="20" rx="3" fill="#ef4444"/></svg>`,
-    food: `<svg viewBox="0 0 80 80" class="card-shape"><circle cx="40" cy="40" r="28" fill="#4ade80"/><circle cx="40" cy="40" r="18" fill="#111" opacity="0.3"/></svg>`
+  // Card background images (transparent PNG)
+  const cardBg = {
+    attack: 'assets/cards/stunning-dance.png',
+    crit: 'assets/cards/rock-invocation.png',
+    heal: 'assets/cards/bubble-gum.png',
+    food: 'assets/cards/campero-boost.png'
   };
 
   container.innerHTML = CARDS.map(c => {
@@ -122,7 +122,10 @@ function renderCards(game) {
     const cls = ['card'];
 
     if (c.type === 'attack') cls.push('attack');
-    if (c.type === 'crit') cls.push('crit');
+    if (c.type === 'crit') {
+      cls.push('crit');
+      cls.push('charge-' + (game.critCyclePos + 1)); // charge-1 (30), charge-2 (40), charge-3 (50)
+    }
     if (c.type === 'heal') cls.push('heal');
     if (c.type === 'food') cls.push('food');
     if (!available) cls.push('used');
@@ -143,11 +146,23 @@ function renderCards(game) {
       effect = `Cures drunk`;
     }
 
+    const drunkBadge = game.isDrunk && (c.type === 'attack' || c.type === 'crit')
+      ? '<img class="card-drunk-badge" src="assets/50percent.png" alt="-50%">' : '';
+
+    // Tooltip descriptions
+    let tooltip = '';
+    if (c.type === 'attack') tooltip = 'Basic attack. Deals 25 damage. Reusable every turn.';
+    else if (c.type === 'crit') tooltip = 'Powerful attack that charges: 30 → 40 → 50 dmg. Using it resets the charge.';
+    else if (c.type === 'heal') tooltip = 'Recovers 25 HP + shield (blocks next attack to 10 dmg). Single use!';
+    else if (c.type === 'food') tooltip = 'Cures Drunk status and resets hit counter. No effect if not drunk.';
+
     return `
       <div class="${cls.join(' ')}" onclick="playCard('${c.id}')" data-id="${c.id}">
+        <img class="card-bg" src="${cardBg[c.type]}" alt="" draggable="false">
+        ${drunkBadge}
         <span class="card-name">${c.name}</span>
-        ${shapes[c.type] || ''}
         <span class="card-effect">${effect}</span>
+        <span class="card-tooltip">${tooltip}</span>
       </div>`;
   }).join('');
 }
@@ -191,6 +206,35 @@ function showYourTurn() {
   void el.offsetWidth;
   el.classList.remove('hidden');
   setTimeout(() => el.classList.add('hidden'), 1200);
+}
+
+// --- Game Timer ---
+let _timerInterval = null;
+let _timerSeconds = 0;
+
+function startGameTimer() {
+  _timerSeconds = 0;
+  updateTimerDisplay(0);
+  clearInterval(_timerInterval);
+  _timerInterval = setInterval(() => {
+    _timerSeconds++;
+    updateTimerDisplay(_timerSeconds);
+  }, 1000);
+}
+
+function stopGameTimer() {
+  clearInterval(_timerInterval);
+  _timerInterval = null;
+}
+
+function updateTimerDisplay(totalSec) {
+  const m = Math.min(Math.floor(totalSec / 60), 9); // max 9 minutes
+  const s = totalSec % 60;
+  const s1 = Math.floor(s / 10);
+  const s2 = s % 10;
+  $('timerM').src = 'assets/timer/' + m + '.webp';
+  $('timerS1').src = 'assets/timer/' + s1 + '.webp';
+  $('timerS2').src = 'assets/timer/' + s2 + '.webp';
 }
 
 function showResult(win, reason) {
@@ -606,10 +650,13 @@ const botDefenseAnim  = new FrameAnimator($('botCanvas'),   'assets/frames/bot-d
 const userRockAttackAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-rock-attack', 51, 40);
 const lightningAnim = new FrameAnimator($('lightningCanvas'), 'assets/frames/lightning', 51, 40);
 const userHealAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-heal', 51, 64);
+const botLaughAnim = new FrameAnimator($('botCanvas'), 'assets/frames/bot-laugh', 75, 40);
+const userFoodAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-food', 66, 40);
+const userDrunkAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-drunk', 75, 40);
 
 // Preload in two phases for faster startup
 const phase1Animators = [bgAnim, userDefaultAnim, botDefaultAnim]; // idle — needed to start
-const phase2Animators = [userAttackAnim, userAttackRevAnim, userDefenseAnim, botAttackAnim, botDefenseAnim, userRockAttackAnim, lightningAnim, userHealAnim]; // combat — loaded in background
+const phase2Animators = [userAttackAnim, userAttackRevAnim, userDefenseAnim, botAttackAnim, botDefenseAnim, userRockAttackAnim, lightningAnim, userHealAnim, botLaughAnim, userFoodAnim, userDrunkAnim]; // combat — loaded in background
 const allAnimators = [...phase1Animators, ...phase2Animators];
 const cardImageSrcs = [
   'assets/cards/attack.jpg',
@@ -805,7 +852,9 @@ Promise.all([
     // Hide title, arrows, dots on last step
     introTitle.style.display = isLast ? 'none' : '';
     prevBtn.style.display = isLast ? 'none' : '';
+    nextBtn.style.display = isLast ? 'none' : '';
     dotsContainer.style.display = isLast ? 'none' : '';
+    $('skipTutorialBtn').style.display = isLast ? 'none' : '';
     // Restart diagram animations by re-inserting the SVG
     const diagram = introSteps[n].querySelector('.step-diagram');
     if (diagram) {
@@ -821,6 +870,11 @@ Promise.all([
     if (currentStep > 0) showStep(currentStep - 1);
   });
   $('startBattleBtn').addEventListener('click', () => {
+    $('introOverlay').classList.add('hidden');
+    showYourTurn();
+    bgMusic.play().catch(() => {});
+  });
+  $('skipTutorialBtn').addEventListener('click', () => {
     $('introOverlay').classList.add('hidden');
     showYourTurn();
     bgMusic.play().catch(() => {});
@@ -949,6 +1003,7 @@ function playEnemyAttack(killingBlow, onHit) {
     const defense = (async () => {
       await delay(1050);
       userDefaultAnim.stop();
+      userDefenseAnim.stop();
       userDefenseAnim._drawFrame(0);
       setTimeout(() => playSfx('assets/mc-defense.mp3', 0.25, 1.5), 200);
       await blinkDamage($('userCanvas'), 'beer');
@@ -979,6 +1034,47 @@ function playHealAnimation() {
     await userHealAnim.playOnce();
     canvas.classList.add('shield-glow');
     canvas.classList.remove('z-front');
+    userDefaultAnim.startLoop();
+    resolve();
+  });
+}
+
+// Bot laughs when MC gets drunk
+function playBotLaugh() {
+  return new Promise(async resolve => {
+    await waitReady(botLaughAnim);
+    botDefaultAnim.stop();
+    botLaughAnim.stop();
+    await botLaughAnim.playOncePingPong();
+    botDefaultAnim.startLoop();
+    resolve();
+  });
+}
+
+// Food card animation (MC hides behind campero)
+function playFoodAnimation() {
+  return new Promise(async resolve => {
+    await waitReady(userFoodAnim);
+    const canvas = $('userCanvas');
+    canvas.classList.add('food-glow');
+    userDefaultAnim.stop();
+    userFoodAnim.stop();
+    await userFoodAnim.playOnce();
+    // Immediate switch — no fade, just start idle instantly
+    canvas.classList.remove('food-glow');
+    userDefaultAnim._drawFrame(0);
+    userDefaultAnim.startLoop();
+    resolve();
+  });
+}
+
+// MC drunk reaction — plays when drunk activates and at start of each drunk turn
+function playDrunkReaction() {
+  return new Promise(async resolve => {
+    await waitReady(userDrunkAnim);
+    userDefaultAnim.stop();
+    userDrunkAnim.stop();
+    await userDrunkAnim.playOncePingPong();
     userDefaultAnim.startLoop();
     resolve();
   });

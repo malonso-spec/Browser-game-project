@@ -448,7 +448,7 @@ h1 {
 
 .sprite-right.z-front,
 .sprite-left.z-front {
-  z-index: 3;
+  z-index: 4;
 }
 
 /* Lightning bolt sprite — overlaid on bot during Rock Invocation */
@@ -549,6 +549,12 @@ h1 {
 .shield-glow {
   filter: sepia(0.3) saturate(3) hue-rotate(210deg) brightness(1.05)
           drop-shadow(0 0 6px rgba(95, 95, 246, 0.6));
+}
+
+/* Food glow — green border on MC when using Campero Boost */
+.food-glow {
+  filter: drop-shadow(0 0 6px rgba(74, 222, 128, 0.7))
+          drop-shadow(0 0 12px rgba(74, 222, 128, 0.4));
 }
 
 /* Arena tremor effect — shakes content only, not the frame */
@@ -759,11 +765,11 @@ h1 {
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 50;
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #fbbf24;
-  text-shadow: 0 0 30px rgba(251, 191, 36, 0.8), 0 2px 8px rgba(0,0,0,0.6);
-  white-space: nowrap;
+}
+.drunk-banner img {
+  width: clamp(200px, 30vw, 400px);
+  height: auto;
+  filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.6));
 }
 .drunk-banner:not(.hidden) {
   animation: critPop 1.2s ease-out forwards;
@@ -810,6 +816,26 @@ h1 {
   z-index: 5;
 }
 
+/* --- Game timer (bottom-left) --- */
+.game-timer {
+  position: fixed;
+  bottom: 12px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  z-index: 20;
+  opacity: 0.7;
+  pointer-events: none;
+}
+.game-timer img {
+  height: clamp(18px, 2.5dvh, 28px);
+  width: auto;
+}
+.game-timer .timer-colon {
+  height: clamp(14px, 2dvh, 22px);
+}
+
 .sponsor-logo {
   position: fixed;
   bottom: 12px;
@@ -849,14 +875,46 @@ h1 {
 
 /* --- Card type borders --- */
 .card.attack { border-color: #f97316; }
-.card.crit { border-color: #fbbf24; box-shadow: 0 0 12px rgba(251, 191, 36, 0.3); }
-.card.heal { border-color: #ef4444; }
+.card.crit { border-color: transparent; position: relative; overflow: visible; z-index: 0; }
+.card.heal { border-color: #5f5ff6; }
+.card.heal .card-bg { width: 95%; }
 .card.food { border-color: #4ade80; }
+
+/* Rock Invocation progressive charge border (clockwise fill) */
+.card.crit::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: -2;
+  background: #333;
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+.card.crit::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: #111;
+  pointer-events: none;
+  z-index: -1;
+}
+.card.crit.charge-1::before {
+  background: conic-gradient(from 0deg, #f97316 0deg, #f97316 120deg, #333 120deg, #333 360deg);
+}
+.card.crit.charge-2::before {
+  background: conic-gradient(from 0deg, #f97316 0deg, #f97316 240deg, #333 240deg, #333 360deg);
+}
+.card.crit.charge-3::before {
+  background: #f97316;
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.5);
+}
 
 /* --- Card name (top) --- */
 .card-name {
   font-family: 'Figtree', sans-serif;
-  font-size: clamp(0.5rem, 1dvh, 0.8rem);
+  font-size: clamp(0.6rem, 1.3dvh, 1rem);
   font-weight: 800;
   text-transform: uppercase;
   text-align: center;
@@ -865,23 +923,91 @@ h1 {
 }
 .card.attack .card-name { color: #f97316; }
 .card.crit .card-name { color: #fbbf24; }
-.card.heal .card-name { color: #ef4444; }
+.card.heal .card-name { color: #5f5ff6; }
 .card.food .card-name { color: #4ade80; }
 
-/* --- Card shape (center) --- */
-.card-shape {
-  width: clamp(36px, 7dvh, 80px);
-  height: clamp(36px, 7dvh, 80px);
-  flex-shrink: 0;
+/* --- Drunk damage penalty overlay --- */
+.card-drunk-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: auto;
+  z-index: 2;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8))
+          drop-shadow(0 0 10px rgba(0, 0, 0, 0.6))
+          drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
 }
 
-/* --- Card effect (bottom) --- */
+/* --- Card background image --- */
+.card-bg {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 85%;
+  height: auto;
+  object-fit: contain;
+  z-index: 0;
+  pointer-events: none;
+  clip-path: inset(0 round 4px);
+}
+
+/* --- Card name (overlay on top) --- */
+.card-name {
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.5);
+}
+
+/* --- Card effect (overlay on bottom) --- */
 .card-effect {
+  position: relative;
+  z-index: 1;
   font-family: 'Figtree', sans-serif;
-  font-size: clamp(0.45rem, 0.9dvh, 0.7rem);
+  font-size: clamp(0.65rem, 1.3dvh, 1rem);
   font-weight: 700;
   text-align: center;
   color: #94a3b8;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+
+/* --- Card tooltip on hover --- */
+.card-tooltip {
+  position: absolute;
+  bottom: 105%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: #e2e8f0;
+  font-family: 'Figtree', sans-serif;
+  font-size: clamp(0.6rem, 1.1dvh, 0.8rem);
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 8px 12px;
+  border-radius: 6px;
+  white-space: normal;
+  width: clamp(160px, 20vw, 220px);
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+.card-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.9);
+}
+.card:hover:not(.used):not(.disabled) .card-tooltip {
+  opacity: 1;
 }
 
 /* --- States --- */
@@ -1058,9 +1184,10 @@ h1 {
 .intro-overlay.hidden { display: none; }
 .intro-content {
   text-align: center;
-  max-width: 420px;
+  max-width: 600px;
   padding: 30px;
   color: #fff;
+  position: relative;
 }
 .intro-content h2 {
   font-size: 1.6rem;
@@ -1076,15 +1203,66 @@ h1 {
   gap: 16px;
   margin-bottom: 24px;
 }
-.intro-steps { min-height: 80px; flex: 1; }
+.intro-steps { min-height: 200px; flex: 1; }
 .intro-step { display: none; }
-.intro-step.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80px; }
+.intro-step.active { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 24px; min-height: 200px; width: 100%; }
 .intro-step p {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: #e2e8f0;
   line-height: 1.5;
-  text-align: center;
-  padding: 0 10px;
+  text-align: left;
+  margin: 6px 0;
+}
+
+/* Skip tutorial button */
+.intro-skip-btn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.6);
+  font-family: 'Figtree', sans-serif;
+  font-size: 0.8rem;
+  padding: 4px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+.intro-skip-btn:hover {
+  color: #fff;
+  border-color: rgba(255,255,255,0.6);
+}
+
+/* Tutorial overview step */
+.tut-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+/* Tutorial card preview */
+.tut-card-preview {
+  flex-shrink: 0;
+}
+.tut-card {
+  width: clamp(100px, 18dvh, 180px) !important;
+  height: clamp(140px, 25dvh, 252px) !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* Tutorial info text */
+.tut-info {
+  text-align: left;
+  max-width: 280px;
+}
+.tut-info h3 {
+  font-family: 'Figtree', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
 }
 .intro-nav-btn {
   background: none;
@@ -1145,12 +1323,16 @@ h1 {
   height: 100px;
 }
 
-/* Final step buttons */
+/* Final step buttons — override row layout to center */
+.intro-step.active:has(.intro-final-btns) {
+  justify-content: center;
+}
 .intro-final-btns {
   display: flex;
   flex-direction: column;
   gap: 16px;
   align-items: center;
+  width: 100%;
 }
 .intro-final-btns .btn {
   min-width: 200px;

@@ -1,10 +1,9 @@
 // --- Game Configuration ---
 const CARDS = [
   { id: 'A1', name: 'Stunning Dance', type: 'attack', baseDmg: 25 },
-  { id: 'A2', name: 'Stunning Dance', type: 'attack', baseDmg: 25 },
   { id: 'CRIT', name: 'Rock Invocation', type: 'crit' },
   { id: 'R', name: 'Bubble Gum', type: 'heal', heal: 25 },
-  { id: 'F', name: 'Food', type: 'food' }
+  { id: 'F', name: 'Campero Boost', type: 'food' }
 ];
 
 const CRIT_CYCLE_DMG = [30, 40, 50]; // damage per position in 3-turn cycle (T1/T2/T3, T4/T5/T6, ...)
