@@ -281,7 +281,7 @@ h1 {
   background-image:
     radial-gradient(circle at center, transparent 0%, #000 90%),
     linear-gradient(rgba(14, 14, 14, 0.92), rgba(14, 14, 14, 0.92)),
-    url('../assets/logo.png');
+    url('../assets/logo.webp');
   background-size: 100% 100%, 100% 100%, 70px auto;
   display: flex;
   flex-direction: column;
@@ -295,7 +295,7 @@ h1 {
   content: '';
   width: 500px;
   height: 350px;
-  background: url('../assets/loading-character.png') center / contain no-repeat;
+  background: url('../assets/loading-character.webp') center / contain no-repeat;
   filter: grayscale(1) brightness(0.75);
   pointer-events: none;
   flex-shrink: 0;
@@ -722,6 +722,24 @@ h1 {
   right: calc(100% + 8px);
 }
 
+/* HP change delta number */
+.hp-delta {
+  position: absolute;
+  top: calc(100% + 4px);
+  font-family: 'Figtree', sans-serif;
+  font-size: clamp(12px, 1.8dvh, 20px);
+  font-weight: 800;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: left 0.4s ease, right 0.4s ease, opacity 0.3s;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+.hp-delta.damage { color: #ef4444; }
+.hp-delta.heal { color: #4ade80; }
+.hp-delta.show { opacity: 1; }
+
 .enemy-side .hp-bar-fill {
   margin-left: auto;
 }
@@ -747,6 +765,15 @@ h1 {
   white-space: nowrap;
   margin-top: 1px;
 }
+
+.drunk-name-tag {
+  font-size: clamp(0.55rem, 1.1dvh, 0.8rem);
+  color: #fbbf24;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  margin-left: 6px;
+}
+.drunk-name-tag.hidden { display: none; }
 
 /* Enemy state (legacy — hidden) */
 .enemy-state {
@@ -1213,9 +1240,12 @@ h1 {
 }
 .intro-content h2 {
   font-size: 1.6rem;
-  margin-bottom: 18px;
+  margin-bottom: 35px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   color: #fbbf24;
   text-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+  width: 100%;
 }
 /* Step-by-step instructions */
 .intro-body {
@@ -1242,12 +1272,12 @@ h1 {
   border: 1px solid rgba(255,255,255,0.3);
   color: rgba(255,255,255,0.6);
   font-family: 'Figtree', sans-serif;
-  font-size: 0.8rem;
-  padding: 4px 14px;
+  font-size: 1rem;
+  padding: 8px 24px;
   border-radius: 20px;
   cursor: pointer;
   transition: all 0.2s;
-  margin-top: 8px;
+  margin-top: 20px;
 }
 .intro-skip-btn:hover {
   color: #fff;

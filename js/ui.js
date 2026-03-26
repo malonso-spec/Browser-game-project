@@ -43,6 +43,9 @@ $('muteBtn').addEventListener('click', () => {
 
 // --- UI updates ---
 let _healBase = -1; // HP point where heal started (-1 = no active heal)
+let _prevPlayerHP = 100;
+let _prevEnemyHP = 100;
+let _deltaTimers = {}; // active delta animations
 
 function updateHearts(containerId, hp) {
   const container = $(containerId);
@@ -83,10 +86,76 @@ function updateHearts(containerId, hp) {
 }
 
 function updateUI(playerHP, enemyHP, turn) {
+  // Detect HP changes and animate deltas
+  if (playerHP !== _prevPlayerHP) {
+    animateHPDelta('playerHearts', 'playerDelta', _prevPlayerHP, playerHP);
+    _prevPlayerHP = playerHP;
+  }
+  if (enemyHP !== _prevEnemyHP) {
+    animateHPDelta('enemyHearts', 'enemyDelta', _prevEnemyHP, enemyHP);
+    _prevEnemyHP = enemyHP;
+  }
   updateHearts('playerHearts', playerHP);
   updateHearts('enemyHearts', enemyHP);
   $('turnCount').textContent = turn;
   $('currentTurn').textContent = turn;
+}
+
+function animateHPDelta(barId, deltaId, oldHP, newHP) {
+  const delta = $(deltaId);
+  const diff = newHP - oldHP;
+  if (diff === 0) return;
+
+  const isDamage = diff < 0;
+  const isEnemy = barId === 'enemyHearts';
+  delta.className = 'hp-delta ' + (isDamage ? 'damage' : 'heal');
+
+  // Clear any running animation
+  if (_deltaTimers[deltaId]) {
+    cancelAnimationFrame(_deltaTimers[deltaId]);
+    _deltaTimers[deltaId] = null;
+  }
+
+  const target = Math.abs(diff);
+  const sign = isDamage ? '-' : '+';
+  const duration = 400; // ms — matches CSS bar transition
+  const startTime = performance.now();
+
+  // Position at old HP edge
+  if (isEnemy) {
+    delta.style.left = 'auto';
+    delta.style.right = oldHP + '%';
+  } else {
+    delta.style.right = 'auto';
+    delta.style.left = oldHP + '%';
+  }
+  delta.textContent = sign + '0';
+  delta.classList.add('show');
+
+  function tick(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const current = Math.round(target * progress);
+    delta.textContent = sign + current;
+
+    // Move position in sync with bar
+    const currentPct = isDamage
+      ? Math.max(0, oldHP - target * progress)
+      : Math.min(100, oldHP + target * progress);
+    if (isEnemy) {
+      delta.style.right = currentPct + '%';
+    } else {
+      delta.style.left = currentPct + '%';
+    }
+
+    if (progress < 1) {
+      _deltaTimers[deltaId] = requestAnimationFrame(tick);
+    } else {
+      _deltaTimers[deltaId] = null;
+      setTimeout(() => delta.classList.remove('show'), 800);
+    }
+  }
+  _deltaTimers[deltaId] = requestAnimationFrame(tick);
 }
 
 function showHealFill(oldHP, newHP) {
@@ -186,8 +255,9 @@ function shake(el) {
 
 function showCritAlert() {
   const el = $('critAlert');
+  el.classList.add('hidden');
+  void el.offsetWidth; // force reflow to restart animation
   el.classList.remove('hidden');
-  playSfx('assets/Heavy.mp3');
   setTimeout(() => el.classList.add('hidden'), 1200);
 }
 
@@ -650,6 +720,7 @@ const botDefenseAnim  = new FrameAnimator($('botCanvas'),   'assets/frames/bot-d
 const userRockAttackAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-rock-attack', 51, 40);
 const lightningAnim = new FrameAnimator($('lightningCanvas'), 'assets/frames/lightning', 51, 40);
 const userHealAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-heal', 51, 64);
+// botHeavyAttackAnim removed — Heavy uses normal bot-attack sprite
 const botLaughAnim = new FrameAnimator($('botCanvas'), 'assets/frames/bot-laugh', 75, 40);
 const userFoodAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-food', 66, 40);
 const userDrunkAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-drunk', 75, 40);
@@ -694,7 +765,10 @@ function confirmName() {
   const raw = $('playerNameInput').value.trim();
   if (!raw) return;
   playerName = raw;
-  $('playerNameLabel').textContent = playerName;
+  const nameLabel = $('playerNameLabel');
+  const drunkTag = $('drunkNameTag');
+  nameLabel.textContent = playerName + ' ';
+  nameLabel.appendChild(drunkTag);
   $('nameScreen').classList.add('hidden');
   $('videoIntro').classList.remove('hidden');
   $('introVideo').play().catch(() => {});
@@ -731,6 +805,7 @@ function endVideoIntro() {
   video.pause();
   stopVideoMusic();
   vid.classList.add('hidden');
+  // Show loading screen immediately (black bg covers battle)
   $('loadingScreen').classList.remove('hidden');
   startPreloading();
 }
@@ -791,11 +866,35 @@ const loadingFill = document.createElement('div');
 loadingFill.className = 'loading-bar-fill';
 loadingBar.appendChild(loadingFill);
 
+let _realLoadPct = 0;
+let _displayPct = 0;
+let _loadingAnimRAF = null;
+const MIN_LOADING_TIME = 2500; // ms
+
 function onFrameLoaded() {
   loadedFrames++;
-  const pct = (loadedFrames / phase1Frames) * 100;
-  loadingFill.style.width = `${Math.min(pct, 100)}%`;
+  _realLoadPct = Math.min((loadedFrames / phase1Frames) * 100, 100);
 }
+
+// Smooth loading bar: animates from 0 to 100% over at least MIN_LOADING_TIME
+function _animateLoadingBar() {
+  if (!_loadingStartTime) { _loadingAnimRAF = requestAnimationFrame(_animateLoadingBar); return; }
+  const elapsed = Date.now() - _loadingStartTime;
+  // Time-based target: smoothly fill over MIN_LOADING_TIME
+  const timePct = Math.min((elapsed / MIN_LOADING_TIME) * 100, 100);
+  // Target is the minimum of real progress and time-based progress
+  // But never go backwards, and always reach 100% when both are done
+  const target = Math.min(_realLoadPct, timePct);
+  _displayPct += (target - _displayPct) * 0.15; // smooth easing
+  if (Math.abs(_displayPct - target) < 0.5) _displayPct = target;
+  loadingFill.style.width = `${_displayPct}%`;
+  if (_displayPct < 99.5) {
+    _loadingAnimRAF = requestAnimationFrame(_animateLoadingBar);
+  } else {
+    loadingFill.style.width = '100%';
+  }
+}
+_loadingAnimRAF = requestAnimationFrame(_animateLoadingBar);
 
 let _preloadResolve;
 const allPreloaded = new Promise(r => { _preloadResolve = r; });
@@ -803,7 +902,9 @@ const allPreloaded = new Promise(r => { _preloadResolve = r; });
 // Keep references to decoded card images so the browser keeps them in cache
 const _cardImageCache = [];
 
+let _loadingStartTime = 0;
 function startPreloading() {
+_loadingStartTime = Date.now();
 // Phase 1: load idle animations + card images (fully decoded)
 const cardImagePromises = cardImageSrcs.map(src => {
   const img = new Image();
@@ -814,7 +915,11 @@ const cardImagePromises = cardImageSrcs.map(src => {
 Promise.all([
   ...phase1Animators.map(a => a.preload(onFrameLoaded)),
   ...cardImagePromises
-]).then(() => bgAnim.bakeFilter()).then(() => {
+]).then(() => bgAnim.bakeFilter()).then(async () => {
+  // Ensure loading screen stays visible for at least 2.5 seconds
+  const elapsed = Date.now() - _loadingStartTime;
+  const remaining = Math.max(0, 2500 - elapsed);
+  if (remaining > 0) await new Promise(r => setTimeout(r, remaining));
   const screen = $('loadingScreen');
   screen.classList.add('fade-out');
   setTimeout(() => screen.remove(), 500);
@@ -900,6 +1005,7 @@ function startIdleAnimations() {
   userDefaultAnim.startLoop();
   botDefaultAnim.startLoop();
 }
+
 
 // ============================================================
 // Combat animations
@@ -995,17 +1101,28 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
 }
 
 // Bot attacks (z-front) → 1s later player defends
-function playEnemyAttack(killingBlow, onHit) {
+// isCrit = true → Heavy attack (same sprite as normal but with Heavy sound + banner)
+function playEnemyAttack(killingBlow, onHit, isCrit) {
   const botCanvas = $('botCanvas');
   return new Promise(async resolve => {
     await Promise.all([waitReady(botAttackAnim), waitReady(userDefenseAnim)]);
     botCanvas.classList.add('z-front');
     botDefaultAnim.stop();
-    setTimeout(() => playSfx('assets/beer-attack.mp3', 0.15, 2.0), 600);
-    const attack = botAttackAnim.playOnce();
 
+    let attack;
+    if (isCrit) {
+      // Heavy attack — same animation + hit sound, Heavy sound synced with banner on hit
+      setTimeout(() => playSfx('assets/beer-attack.mp3', 0.15, 2.0), 600);
+      attack = botAttackAnim.playOnce();
+    } else {
+      // Normal attack
+      setTimeout(() => playSfx('assets/beer-attack.mp3', 0.15, 2.0), 600);
+      attack = botAttackAnim.playOnce();
+    }
+
+    const defenseDelay = isCrit ? 800 : 1050;
     const defense = (async () => {
-      await delay(1050);
+      await delay(defenseDelay);
       userDefaultAnim.stop();
       userDefenseAnim.stop();
       userDefenseAnim._drawFrame(0);
@@ -1049,6 +1166,7 @@ function playBotLaugh() {
     await waitReady(botLaughAnim);
     botDefaultAnim.stop();
     botLaughAnim.stop();
+    setTimeout(() => playSfx('assets/bot-laugh.mp3', 0.3), 425);
     await botLaughAnim.playOncePingPong();
     botDefaultAnim.startLoop();
     resolve();
@@ -1104,3 +1222,9 @@ function removeShieldGlow() {
 function delay(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
+
+// Drunk bubbles removed — stubs for game.js compatibility
+function startDrunkBubbles() {}
+function stopDrunkBubbles() {}
+function pauseDrunkBubbles() {}
+function resumeDrunkBubbles() {}

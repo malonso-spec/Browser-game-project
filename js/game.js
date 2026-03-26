@@ -10,13 +10,22 @@ const game = {
   shieldActive: false,
   heavyUsed: false,
   isDrunk: false,
-  earlyHeavyDone: false,  // T1-T3: Heavy already happened
-  earlyDrunkDone: false,  // T1-T3: Drunk already happened
+  earlyPlan: [],          // Pre-assigned T1-T3 events: ['heavy','drunk','nothing'] shuffled
   consecutiveHits: 0,
   critCyclePos: 0,      // 0=30, 1=40, 2=50 — resets when Rock Invocation is used
   startTime: null,       // timestamp when battle starts
   elapsedSeconds: 0      // seconds elapsed at game end
 };
+
+// Fisher-Yates shuffle
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 function getCritDmg() {
   return CRIT_CYCLE_DMG[game.critCyclePos];
@@ -36,8 +45,7 @@ function init() {
     shieldActive: false,
     heavyUsed: false,
     isDrunk: false,
-    earlyHeavyDone: false,
-    earlyDrunkDone: false,
+    earlyPlan: shuffleArray(['heavy', 'drunk', 'nothing']),
     consecutiveHits: 0,
     critCyclePos: 0,
     startTime: Date.now(),
@@ -45,10 +53,14 @@ function init() {
   });
 
   _healBase = -1;
+  _prevPlayerHP = 100;
+  _prevEnemyHP = 100;
   $('playerHealFill').style.opacity = '0';
   updateUI(game.playerHP, game.enemyHP, game.turn);
   $('drunkStatus').textContent = '';
   $('drunkStatus').classList.add('hidden');
+  $('drunkNameTag').classList.add('hidden');
+  stopDrunkBubbles();
   $('result').classList.add('hidden');
 
   // Clean up any mid-flight animation state
@@ -68,6 +80,7 @@ function init() {
   userHealAnim.stop();
   botAttackAnim.stop();
   botDefenseAnim.stop();
+  // botHeavyAttackAnim removed — Heavy uses normal bot-attack sprite
   botLaughAnim.stop();
   userFoodAnim.stop();
   userDrunkAnim.stop();
@@ -137,6 +150,8 @@ async function playCard(id) {
     if (game.isDrunk) {
       game.isDrunk = false;
       game.consecutiveHits = 0;
+      stopDrunkBubbles();
+      $('drunkNameTag').classList.add('hidden');
     }
     // If not drunk, Food has no effect (wastes the turn)
     updateUI(game.playerHP, game.enemyHP, game.turn);
@@ -156,37 +171,29 @@ async function playCard(id) {
   let enemyDmg;
   let heavyHappened = false;
 
-  // T1-T3 guarantee: both Heavy AND Drunk must happen (on different turns)
-  let mustHeavy = false;
-  let mustDrunk = false;
-  if (game.turn <= 3 && !game.shieldActive) {
-    const turnsLeft = 3 - game.turn; // turns remaining after this one
-    const needHeavy = !game.earlyHeavyDone;
-    const needDrunk = !game.earlyDrunkDone && !game.isDrunk;
-    const eventsNeeded = (needHeavy ? 1 : 0) + (needDrunk ? 1 : 0);
-    if (eventsNeeded > 0 && eventsNeeded > turnsLeft) {
-      // Must trigger at least one event this turn to fit both in T1-T3
-      if (needHeavy && needDrunk) {
-        if (Math.random() < 0.5) mustHeavy = true;
-        else mustDrunk = true;
-      } else if (needHeavy) mustHeavy = true;
-      else if (needDrunk) mustDrunk = true;
-    }
-  }
+  // Determine what happens this turn
+  const plannedEvent = (game.turn <= 3) ? game.earlyPlan[game.turn - 1] : null;
 
   if (game.shieldActive) {
+    // Shield has absolute priority — blocks any attack to 10 dmg
     enemyDmg = ENEMY_DMG_BLOCKED;
     game.shieldActive = false;
-  } else if (game.turn <= 3 && !game.heavyUsed) {
-    // T1-T3: Heavy with 33% chance (or forced), but not if Drunk is forced this turn
-    if (mustHeavy || (!mustDrunk && Math.random() < ENEMY_CRIT_CHANCE_EARLY)) {
-      enemyDmg = ENEMY_CRIT_DMG;
-      heavyHappened = true;
-      game.heavyUsed = true;
-      game.earlyHeavyDone = true;
-    } else {
-      enemyDmg = ENEMY_DMG;
+    // If Heavy was planned, it's NOT consumed — reschedule to a later T1-T3 turn
+    if (plannedEvent === 'heavy') {
+      // Swap Heavy with the next 'nothing' slot, or the next available slot
+      for (let i = game.turn; i < 3; i++) {
+        if (game.earlyPlan[i] === 'nothing') {
+          game.earlyPlan[i] = 'heavy';
+          game.earlyPlan[game.turn - 1] = 'nothing';
+          break;
+        }
+      }
     }
+  } else if (plannedEvent === 'heavy') {
+    // T1-T3: Planned Heavy attack
+    enemyDmg = ENEMY_CRIT_DMG;
+    heavyHappened = true;
+    game.heavyUsed = true;
   } else if (!game.heavyUsed && game.turn > 3) {
     // T4+: Heavy with 40% (if never used in battle)
     if (Math.random() < ENEMY_CRIT_CHANCE_LATE) {
@@ -204,11 +211,11 @@ async function playCard(id) {
   const willKillPlayer = game.playerHP <= 0;
   const isCrit = heavyHappened;
   await playEnemyAttack(willKillPlayer, () => {
-    if (isCrit) showCritAlert();
+    if (isCrit) { showCritAlert(); playSfx('assets/Heavy-sound.mp3', 0.35, 2.0); }
     removeShieldGlow();
     shake($('playerFighter'));
     updateUI(game.playerHP, game.enemyHP, game.turn);
-  });
+  }, isCrit);
 
   // --- Check player defeated ---
   if (game.playerHP <= 0) {
@@ -219,27 +226,24 @@ async function playCard(id) {
 
   // --- Drunk mechanic ---
   if (!game.isDrunk) {
-    if (game.turn <= 3) {
-      // T1-T3: Drunk guaranteed, but not on same turn as Heavy
-      if (!heavyHappened && !game.earlyDrunkDone) {
-        game.consecutiveHits++;
-        const chanceIndex = Math.min(game.consecutiveHits - 1, 2);
-        if (mustDrunk || Math.random() < DRUNK_CHANCES[chanceIndex]) {
-          game.isDrunk = true;
-          game.consecutiveHits = 0;
-          game.earlyDrunkDone = true;
-          showDrunkBanner();
-          await Promise.all([playDrunkReaction(), playBotLaugh()]);
-        }
-      }
-    } else if (!heavyHappened) {
-      // T4+: Drunk can happen, but never on the same turn as Heavy
+    if (plannedEvent === 'drunk') {
+      // T1-T3: Planned Drunk activation
+      game.isDrunk = true;
+      game.consecutiveHits = 0;
+      showDrunkBanner();
+      startDrunkBubbles();
+      $('drunkNameTag').classList.remove('hidden');
+      await Promise.all([playDrunkReaction(), playBotLaugh()]);
+    } else if (game.turn > 3 && !heavyHappened) {
+      // T4+: Drunk can happen by probability, never on same turn as Heavy
       game.consecutiveHits++;
       const chanceIndex = Math.min(game.consecutiveHits - 1, 2);
       if (Math.random() < DRUNK_CHANCES[chanceIndex]) {
         game.isDrunk = true;
         game.consecutiveHits = 0;
         showDrunkBanner();
+        startDrunkBubbles();
+        $('drunkNameTag').classList.remove('hidden');
         await Promise.all([playDrunkReaction(), playBotLaugh()]);
       }
     }
