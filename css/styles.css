@@ -926,7 +926,11 @@ h1 {
 }
 .card.crit.charge-3::before {
   background: #f97316;
-  box-shadow: 0 0 14px rgba(249, 115, 22, 0.5);
+  animation: critChargePulse 1.5s ease-in-out infinite;
+}
+@keyframes critChargePulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(249, 115, 22, 0.4); }
+  50% { box-shadow: 0 0 22px rgba(249, 115, 22, 0.8), 0 0 40px rgba(249, 115, 22, 0.3); }
 }
 
 /* --- Card name (top) --- */
