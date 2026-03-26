@@ -882,6 +882,10 @@ Promise.all([
   $('replayTutorialBtn').addEventListener('click', () => {
     showStep(0);
   });
+  $('infoBtn').addEventListener('click', () => {
+    showStep(0);
+    $('introOverlay').classList.remove('hidden');
+  });
   introDots.forEach(dot => {
     dot.addEventListener('click', () => showStep(parseInt(dot.dataset.dot, 10)));
   });

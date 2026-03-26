@@ -326,6 +326,24 @@ h1 {
 }
 
 /* Mute button — flat, minimal */
+/* Info button — top left */
+.info-btn {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 9999;
+  background: none;
+  border: none;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.2s;
+}
+.info-btn:hover { color: #fbbf24; }
+.info-btn svg { width: 100%; height: 100%; }
+
 .mute-btn {
   position: fixed;
   top: 16px;
