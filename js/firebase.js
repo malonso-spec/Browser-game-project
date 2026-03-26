@@ -19,19 +19,30 @@ const analytics = firebase.analytics();
 
 // --- Analytics helpers ---
 function trackGameStart(playerName) {
+  const gamesPlayed = parseInt(localStorage.getItem('games_played') || '0') + 1;
+  localStorage.setItem('games_played', gamesPlayed);
+
+  analytics.setUserProperties({ games_played: gamesPlayed });
   analytics.logEvent('game_start', {
-    player_name: playerName
+    player_name: playerName,
+    games_played: gamesPlayed
   });
 }
 
 function trackGameEnd(playerName, win, hp, turns, seconds) {
+  const gamesPlayed = parseInt(localStorage.getItem('games_played') || '1');
+  const gamesCompleted = parseInt(localStorage.getItem('games_completed') || '0') + 1;
+  localStorage.setItem('games_completed', gamesCompleted);
+
   analytics.logEvent('game_end', {
     player_name: playerName,
     result: win ? 'win' : 'lose',
     hp_remaining: hp,
     turns: turns,
     time_seconds: seconds,
-    score: win ? calculateScore(hp, turns, seconds) : 0
+    score: win ? calculateScore(hp, turns, seconds) : 0,
+    games_played: gamesPlayed,
+    games_completed: gamesCompleted
   });
 }
 
