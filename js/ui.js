@@ -158,13 +158,14 @@ function animateHPDelta(barId, deltaId, oldHP, newHP) {
   _deltaTimers[deltaId] = requestAnimationFrame(tick);
 }
 
-function showHealFill(oldHP, newHP) {
+function showHealFill(oldHP, newHP, color) {
   const healFill = $('playerHealFill');
   if (!healFill) return;
   _healBase = Math.max(0, Math.min(100, oldHP));
   const newPct = Math.max(0, Math.min(100, newHP));
   healFill.style.left = _healBase + '%';
   healFill.style.width = (newPct - _healBase) + '%';
+  healFill.style.background = color || '#5f5ff6';
   healFill.style.transition = 'none';
   healFill.style.opacity = '1';
   // Flatten inner corners so bars look joined
@@ -212,7 +213,7 @@ function renderCards(game) {
     } else if (c.type === 'heal') {
       effect = `Protection: ${c.heal}p`;
     } else if (c.type === 'food') {
-      effect = `Cures drunk`;
+      effect = `+${c.heal}HP · Cures drunk`;
     }
 
     const drunkBadge = game.isDrunk && (c.type === 'attack' || c.type === 'crit')
@@ -223,10 +224,11 @@ function renderCards(game) {
     if (c.type === 'attack') tooltip = 'Basic attack. Deals 25 damage. Reusable every turn.';
     else if (c.type === 'crit') tooltip = 'Powerful attack that charges: 30 → 40 → 50 dmg. Using it resets the charge.';
     else if (c.type === 'heal') tooltip = 'Recovers 25 HP + shield (blocks next attack to 10 dmg). Single use!';
-    else if (c.type === 'food') tooltip = 'Cures Drunk status and resets hit counter. No effect if not drunk.';
+    else if (c.type === 'food') tooltip = 'Recovers 10 HP and cures Drunk status. Reusable every turn.';
 
     return `
       <div class="${cls.join(' ')}" onclick="playCard('${c.id}')" data-id="${c.id}">
+        <span class="card-star">★</span>
         <img class="card-bg" src="${cardBg[c.type]}" alt="" draggable="false">
         ${drunkBadge}
         <span class="card-name">${c.name}</span>
@@ -1052,14 +1054,15 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
     if (isBonus) {
       // Rock Invocation — play rock sprite + lightning bolt sprite
       await Promise.all([waitReady(userRockAttackAnim), waitReady(lightningAnim)]);
-      setTimeout(arenaLightning, 300);
       const lc = $('lightningCanvas');
-      lc.style.display = 'block';
       attack = (async () => {
         await Promise.all([
           userRockAttackAnim.playOnce(),
           (async () => {
-            await delay(200);
+            // Wait for rock sprite to reach strike moment before showing lightning
+            await delay(500);
+            arenaLightning();
+            lc.style.display = 'block';
             playSfx('assets/rock-invocation.mp3', 0.25, 2.0);
             await lightningAnim.playOnce();
           })()
@@ -1191,13 +1194,13 @@ function playFoodAnimation() {
 }
 
 // MC drunk reaction — plays when drunk activates and at start of each drunk turn
-function playDrunkReaction() {
+function playDrunkReaction(skipIdleRestart) {
   return new Promise(async resolve => {
     await waitReady(userDrunkAnim);
     userDefaultAnim.stop();
     userDrunkAnim.stop();
     await userDrunkAnim.playOncePingPong();
-    userDefaultAnim.startLoop();
+    if (!skipIdleRestart) userDefaultAnim.startLoop();
     resolve();
   });
 }

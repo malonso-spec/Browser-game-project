@@ -62,6 +62,7 @@ function init() {
   $('drunkNameTag').classList.add('hidden');
   stopDrunkBubbles();
   $('result').classList.add('hidden');
+  $('infoBtn').classList.remove('hidden');
 
   // Clean up any mid-flight animation state
   const botCanvas = $('botCanvas');
@@ -113,7 +114,8 @@ async function playCard(id) {
 
   // --- Play drunk reaction at the start of each turn while drunk ---
   if (game.isDrunk && card.type !== 'food') {
-    await playDrunkReaction();
+    const skipIdleRestart = (card.type === 'attack' || card.type === 'crit');
+    await playDrunkReaction(skipIdleRestart);
   }
 
   // --- Resolve card ---
@@ -147,13 +149,16 @@ async function playCard(id) {
 
   } else if (card.type === 'food') {
     await playFoodAnimation();
+    // Always heal 10 HP
+    const oldHP = game.playerHP;
+    game.playerHP = Math.min(100, game.playerHP + card.heal);
+    if (oldHP !== game.playerHP) showHealFill(oldHP, game.playerHP, '#4ade80');
     if (game.isDrunk) {
       game.isDrunk = false;
       game.consecutiveHits = 0;
       stopDrunkBubbles();
       $('drunkNameTag').classList.add('hidden');
     }
-    // If not drunk, Food has no effect (wastes the turn)
     updateUI(game.playerHP, game.enemyHP, game.turn);
   }
 
@@ -266,6 +271,7 @@ async function playCard(id) {
 
 async function endGame(win, reason) {
   stopGameTimer();
+  $('infoBtn').classList.add('hidden');
   game.elapsedSeconds = Math.round((Date.now() - game.startTime) / 1000);
   trackGameEnd(playerName, win, game.playerHP, game.turn, game.elapsedSeconds);
   showResult(win, reason);

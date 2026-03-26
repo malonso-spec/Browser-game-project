@@ -911,6 +911,7 @@ h1 {
   padding: clamp(6px, 1.2dvh, 14px) clamp(4px, 0.8dvh, 10px);
   position: relative;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .card:hover:not(.used):not(.disabled) {
@@ -920,10 +921,12 @@ h1 {
 
 /* --- Card type borders --- */
 .card.attack { border-color: #f97316; }
+.card.attack .card-bg { top: 45%; }
 .card.crit { border-color: transparent; position: relative; overflow: visible; z-index: 0; }
 .card.heal { border-color: #5f5ff6; }
 .card.heal .card-bg { width: 95%; top: 45%; }
 .card.food { border-color: #4ade80; }
+.card.food .card-bg { top: 45%; }
 
 /* Rock Invocation progressive charge border (clockwise fill) */
 .card.crit::before {
@@ -989,6 +992,20 @@ h1 {
           drop-shadow(0 0 10px rgba(0, 0, 0, 0.6))
           drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
 }
+
+/* --- Rock star decoration behind card illustration --- */
+.card-star {
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  font-size: 10em;
+  color: rgba(255, 255, 255, 0.12);
+  z-index: 0;
+  pointer-events: none;
+  line-height: 1;
+}
+.card .card-star { color: rgba(255, 255, 255, 0.08); }
 
 /* --- Card background image --- */
 .card-bg {
