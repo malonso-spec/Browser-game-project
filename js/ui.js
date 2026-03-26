@@ -485,7 +485,7 @@ class FrameAnimator {
         // Holding at peak frame
         if (timestamp >= this.peakUntil) {
           this.direction = -1;
-          this.current = this.bitmaps.length - 7;
+          this.current = this.bitmaps.length - 2;
         }
         this._draw();
         return;

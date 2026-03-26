@@ -895,7 +895,7 @@ h1 {
 .card.attack { border-color: #f97316; }
 .card.crit { border-color: transparent; position: relative; overflow: visible; z-index: 0; }
 .card.heal { border-color: #5f5ff6; }
-.card.heal .card-bg { width: 95%; }
+.card.heal .card-bg { width: 95%; top: 45%; }
 .card.food { border-color: #4ade80; }
 
 /* Rock Invocation progressive charge border (clockwise fill) */
