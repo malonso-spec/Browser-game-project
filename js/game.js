@@ -96,7 +96,9 @@ function init() {
   renderCards(game);
   dealCards();
   startIdleAnimations();
-  startGameTimer();
+  stopGameTimer();
+  _timerSeconds = 0;
+  updateTimerDisplay(0);
   trackGameStart(playerName);
 }
 
@@ -305,6 +307,7 @@ async function endGame(win, reason) {
 
 function restart() {
   init();
+  startGameTimer();
 }
 
 // Wait for all sprite frames to be pre-decoded, then start

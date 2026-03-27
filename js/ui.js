@@ -284,9 +284,11 @@ function showYourTurn() {
 let _timerInterval = null;
 let _timerSeconds = 0;
 
-function startGameTimer() {
-  _timerSeconds = 0;
-  updateTimerDisplay(0);
+function startGameTimer(reset) {
+  if (reset) {
+    _timerSeconds = 0;
+    updateTimerDisplay(0);
+  }
   clearInterval(_timerInterval);
   _timerInterval = setInterval(() => {
     _timerSeconds++;
@@ -411,7 +413,6 @@ $('outroContinueBtn').addEventListener('click', () => {
   if (_outroPhase === 1) {
     _outroPhase = 2;
     const v = $('outroVideo');
-    v.currentTime = v.currentTime + (5 / 25); // skip 5 frames at 25fps
     v.play().catch(() => {});
   } else {
     window.location.reload();
@@ -1012,11 +1013,13 @@ Promise.all([
   });
   $('startBattleBtn').addEventListener('click', () => {
     $('introOverlay').classList.add('hidden');
+    startGameTimer();
     showYourTurn();
     bgMusic.play().catch(() => {});
   });
   $('skipTutorialBtn').addEventListener('click', () => {
     $('introOverlay').classList.add('hidden');
+    startGameTimer();
     showYourTurn();
     bgMusic.play().catch(() => {});
   });
@@ -1026,6 +1029,7 @@ Promise.all([
   $('infoBtn').addEventListener('click', () => {
     showStep(0);
     $('introOverlay').classList.remove('hidden');
+    stopGameTimer();
   });
   introDots.forEach(dot => {
     dot.addEventListener('click', () => showStep(parseInt(dot.dataset.dot, 10)));

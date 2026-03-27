@@ -875,11 +875,11 @@ h1 {
   pointer-events: none;
 }
 .game-timer img {
-  height: clamp(24px, 3.5dvh, 38px);
+  height: clamp(20px, 3dvh, 32px);
   width: auto;
 }
 .game-timer .timer-colon {
-  height: clamp(20px, 3dvh, 32px);
+  height: clamp(16px, 2.5dvh, 26px);
 }
 
 .sponsor-logo {
