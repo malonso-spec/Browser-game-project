@@ -211,12 +211,12 @@
                 <span class="card-star">★</span>
                 <img class="card-bg" src="assets/cards/stunning-dance.png" alt="" draggable="false">
                 <span class="card-name">Stunning Dance</span>
-                <span class="card-effect">Damage: 25p</span>
+                <span class="card-effect">Damage: 20p</span>
               </div>
             </div>
             <div class="tut-info">
               <h3 style="color:#f97316">Stunning Dance</h3>
-              <p>Your basic attack. Deals <strong>25 damage</strong> to the enemy every turn.</p>
+              <p>Your basic attack. Deals <strong>20 damage</strong> to the enemy every turn.</p>
               <p>This card is <strong>reusable</strong> — you can play it every turn without limit.</p>
             </div>
           </div>
@@ -264,12 +264,25 @@
             </div>
             <div class="tut-info">
               <h3 style="color:#4ade80">Campero Boost</h3>
-              <p>Recovers <strong>10 HP</strong> and cures the <strong>Drunk status</strong>, resetting the hit counter.</p>
+              <p>Recovers <strong>10 HP</strong>, cures the <strong>Drunk status</strong>, and <strong>weakens the next enemy attack</strong>.</p>
               <p>This card is <strong>reusable</strong> — use it every turn if you need healing.</p>
             </div>
           </div>
-          <!-- Step 5: Go to battle -->
+          <!-- Step 5: Enemy special attacks -->
           <div class="intro-step" data-step="5">
+            <div class="tut-overview">
+              <p style="font-size:1.05rem; text-align:center; margin-bottom:12px;"><strong style="color:#ef4444">Watch out!</strong> The enemy has special attacks:</p>
+              <p style="text-align:left; margin-bottom:8px;">
+                <strong style="color:#fbbf24">⚡ Heavy</strong> — A devastating attack that deals <strong>massive damage</strong>. When you see the warning, brace yourself!
+              </p>
+              <p style="text-align:left; margin-bottom:8px;">
+                <strong style="color:#f97316">🍺 Drunk</strong> — The enemy can make you drunk, <strong>cutting your attack damage in half</strong>. Use <strong style="color:#4ade80">Campero Boost</strong> to cure it!
+              </p>
+              <p style="text-align:center; margin-top:12px; color:rgba(255,255,255,0.5); font-size:0.85rem;">Stay alert and use your cards strategically to survive.</p>
+            </div>
+          </div>
+          <!-- Step 6: Go to battle -->
+          <div class="intro-step" data-step="6">
             <div class="intro-final-btns">
               <button class="btn" id="startBattleBtn">Go to battle!</button>
               <button class="btn btn--secondary" id="replayTutorialBtn">Back to tutorial</button>
@@ -284,6 +297,8 @@
         <span class="intro-dot" data-dot="2"></span>
         <span class="intro-dot" data-dot="3"></span>
         <span class="intro-dot" data-dot="4"></span>
+        <span class="intro-dot" data-dot="5"></span>
+        <span class="intro-dot" data-dot="6"></span>
       </div>
       <button class="intro-skip-btn" id="skipTutorialBtn">Skip</button>
     </div>

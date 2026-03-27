@@ -8,11 +8,13 @@ const game = {
   consumedCards: [],    // permanently consumed (R only)
   isProcessing: false,
   shieldActive: false,
-  heavyUsed: false,
+  heavyCount: 0,         // max 2 per battle
   isDrunk: false,
   earlyPlan: [],          // Pre-assigned T1-T3 events: ['heavy','drunk','nothing'] shuffled
   consecutiveHits: 0,
-  critCyclePos: 0,      // 0=30, 1=40, 2=50 — resets when Rock Invocation is used
+  critCyclePos: 0,      // 0=25, 1=40, 2=50 — resets when Rock Invocation is used
+  camperoBoostActive: false,  // next bot normal attack does 20 instead of 25
+  lastDrunkTurn: 0,          // track last drunk activation turn to prevent consecutive T4+
   startTime: null,       // timestamp when battle starts
   elapsedSeconds: 0      // seconds elapsed at game end
 };
@@ -43,11 +45,13 @@ function init() {
     consumedCards: [],
     isProcessing: false,
     shieldActive: false,
-    heavyUsed: false,
+    heavyCount: 0,
     isDrunk: false,
     earlyPlan: shuffleArray(['heavy', 'drunk', 'nothing']),
     consecutiveHits: 0,
     critCyclePos: 0,
+    camperoBoostActive: false,
+    lastDrunkTurn: 0,
     startTime: Date.now(),
     elapsedSeconds: 0
   });
@@ -159,6 +163,7 @@ async function playCard(id) {
       stopDrunkBubbles();
       $('drunkNameTag').classList.add('hidden');
     }
+    game.camperoBoostActive = true; // next bot normal attack does 20 dmg
     updateUI(game.playerHP, game.enemyHP, game.turn);
   }
 
@@ -198,19 +203,25 @@ async function playCard(id) {
     // T1-T3: Planned Heavy attack
     enemyDmg = ENEMY_CRIT_DMG;
     heavyHappened = true;
-    game.heavyUsed = true;
-  } else if (!game.heavyUsed && game.turn > 3) {
-    // T4+: Heavy with 40% (if never used in battle)
+    game.heavyCount++;
+  } else if (game.heavyCount < 2 && game.turn > 3) {
+    // T4+: Heavy with 40% (max 2 per battle)
     if (Math.random() < ENEMY_CRIT_CHANCE_LATE) {
       enemyDmg = ENEMY_CRIT_DMG;
       heavyHappened = true;
-      game.heavyUsed = true;
+      game.heavyCount++;
     } else {
       enemyDmg = ENEMY_DMG;
     }
   } else {
     enemyDmg = ENEMY_DMG;
   }
+
+  // Campero Boost reduces next normal attack to 20 dmg
+  if (game.camperoBoostActive && enemyDmg === ENEMY_DMG) {
+    enemyDmg = 20;
+  }
+  game.camperoBoostActive = false;
 
   game.playerHP = Math.max(0, game.playerHP - enemyDmg);
   const willKillPlayer = game.playerHP <= 0;
@@ -235,20 +246,28 @@ async function playCard(id) {
       // T1-T3: Planned Drunk activation
       game.isDrunk = true;
       game.consecutiveHits = 0;
+      game.lastDrunkTurn = game.turn;
+      // Bot heals 5 HP when Drunk activates
+      game.enemyHP = Math.min(100, game.enemyHP + 5);
       showDrunkBanner();
       startDrunkBubbles();
       $('drunkNameTag').classList.remove('hidden');
+      updateUI(game.playerHP, game.enemyHP, game.turn);
       await Promise.all([playDrunkReaction(), playBotLaugh()]);
-    } else if (game.turn > 3 && !heavyHappened) {
-      // T4+: Drunk can happen by probability, never on same turn as Heavy
+    } else if (game.turn > 3 && !heavyHappened && game.lastDrunkTurn < game.turn - 1) {
+      // T4+: Drunk can happen by probability, never on same turn as Heavy, never consecutive
       game.consecutiveHits++;
       const chanceIndex = Math.min(game.consecutiveHits - 1, 2);
       if (Math.random() < DRUNK_CHANCES[chanceIndex]) {
         game.isDrunk = true;
         game.consecutiveHits = 0;
+        game.lastDrunkTurn = game.turn;
+        // Bot heals 5 HP when Drunk activates
+        game.enemyHP = Math.min(100, game.enemyHP + 5);
         showDrunkBanner();
         startDrunkBubbles();
         $('drunkNameTag').classList.remove('hidden');
+        updateUI(game.playerHP, game.enemyHP, game.turn);
         await Promise.all([playDrunkReaction(), playBotLaugh()]);
       }
     }
@@ -258,8 +277,9 @@ async function playCard(id) {
   game.turn++;
 
   // Advance crit cycle if Rock Invocation was NOT used this turn
+  // Cycle wraps: 0(30) → 1(40) → 2(50) → 0(30) → ...
   if (card.type !== 'crit') {
-    game.critCyclePos = Math.min(game.critCyclePos + 1, 2);
+    game.critCyclePos = (game.critCyclePos + 1) % 3;
   }
 
   updateCritIndicator();

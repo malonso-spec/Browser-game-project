@@ -221,10 +221,10 @@ function renderCards(game) {
 
     // Tooltip descriptions
     let tooltip = '';
-    if (c.type === 'attack') tooltip = 'Basic attack. Deals 25 damage. Reusable every turn.';
+    if (c.type === 'attack') tooltip = 'Basic attack. Deals 20 damage. Reusable every turn.';
     else if (c.type === 'crit') tooltip = 'Powerful attack that charges: 30 → 40 → 50 dmg. Using it resets the charge.';
     else if (c.type === 'heal') tooltip = 'Recovers 25 HP + shield (blocks next attack to 10 dmg). Single use!';
-    else if (c.type === 'food') tooltip = 'Recovers 10 HP and cures Drunk status. Reusable every turn.';
+    else if (c.type === 'food') tooltip = 'Recovers 10 HP, cures Drunk status, and weakens the next enemy attack. Reusable every turn.';
 
     return `
       <div class="${cls.join(' ')}" onclick="playCard('${c.id}')" data-id="${c.id}">
@@ -781,7 +781,41 @@ function confirmName() {
 $('nameConfirmBtn').addEventListener('click', confirmName);
 $('playerNameInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') confirmName();
+  // Keyboard click sound for typing
+  if (e.key.length === 1 || e.key === 'Backspace') {
+    playKeystrokeSound();
+  }
 });
+
+function playKeystrokeSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const t = ctx.currentTime;
+    // White noise burst — sounds like a soft mechanical key click
+    const bufLen = Math.floor(ctx.sampleRate * 0.025); // 25ms
+    const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufLen * 0.15));
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    // Bandpass filter for that clicky character
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 2000 + Math.random() * 1500;
+    filter.Q.value = 1.5;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.08 + Math.random() * 0.04, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    src.start(t);
+    src.stop(t + 0.03);
+    setTimeout(() => ctx.close(), 80);
+  } catch (_) {}
+}
 
 // --- Chapter Selection Grid ---
 const UNLOCKED_CHAPTERS = new Set([1]); // chapter numbers that are unlocked
@@ -1123,7 +1157,7 @@ function playEnemyAttack(killingBlow, onHit, isCrit) {
       attack = botAttackAnim.playOnce();
     }
 
-    const defenseDelay = isCrit ? 800 : 1050;
+    const defenseDelay = 1200;
     const defense = (async () => {
       await delay(defenseDelay);
       userDefaultAnim.stop();
