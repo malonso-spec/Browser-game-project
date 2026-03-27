@@ -85,7 +85,8 @@ function init() {
   userHealAnim.stop();
   botAttackAnim.stop();
   botDefenseAnim.stop();
-  // botHeavyAttackAnim removed — Heavy uses normal bot-attack sprite
+  botHeavyAttackAnim.stop();
+  botHeavyReverseAnim.stop();
   botLaughAnim.stop();
   userFoodAnim.stop();
   userDrunkAnim.stop();

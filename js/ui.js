@@ -722,14 +722,15 @@ const botDefenseAnim  = new FrameAnimator($('botCanvas'),   'assets/frames/bot-d
 const userRockAttackAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-rock-attack', 51, 40);
 const lightningAnim = new FrameAnimator($('lightningCanvas'), 'assets/frames/lightning', 51, 40);
 const userHealAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-heal', 51, 64);
-// botHeavyAttackAnim removed — Heavy uses normal bot-attack sprite
+const botHeavyAttackAnim = new FrameAnimator($('botCanvas'), 'assets/frames/bot-heavy-attack', 76, 48);
+const botHeavyReverseAnim = new FrameAnimator($('botCanvas'), 'assets/frames/bot-heavy-reverse', 76, 48);
 const botLaughAnim = new FrameAnimator($('botCanvas'), 'assets/frames/bot-laugh', 75, 40);
 const userFoodAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-food', 66, 40);
 const userDrunkAnim = new FrameAnimator($('userCanvas'), 'assets/frames/user-drunk', 75, 40);
 
 // Preload in two phases for faster startup
 const phase1Animators = [bgAnim, userDefaultAnim, botDefaultAnim]; // idle — needed to start
-const phase2Animators = [userAttackAnim, userAttackRevAnim, userDefenseAnim, botAttackAnim, botDefenseAnim, userRockAttackAnim, lightningAnim, userHealAnim, botLaughAnim, userFoodAnim, userDrunkAnim]; // combat — loaded in background
+const phase2Animators = [userAttackAnim, userAttackRevAnim, userDefenseAnim, botAttackAnim, botDefenseAnim, userRockAttackAnim, lightningAnim, userHealAnim, botHeavyAttackAnim, botHeavyReverseAnim, botLaughAnim, userFoodAnim, userDrunkAnim]; // combat — loaded in background
 const allAnimators = [...phase1Animators, ...phase2Animators];
 const cardImageSrcs = [
   'assets/cards/attack.jpg',
@@ -847,7 +848,7 @@ function endVideoIntro() {
 }
 $('introVideo').playbackRate = 1;
 const INTRO_SWAP_TIME = 250 / 25; // frame 250 — swap Skip→Continue early
-const INTRO_PAUSE_TIME = 325 / 25; // frame 325 at 25fps = 13s (viñetas fully visible)
+const INTRO_PAUSE_TIME = 325 / 25; // frame 325 at 25fps = 13s
 const INTRO_BATTLE_BTN_TIME = 450 / 25; // frame 450 — show "Go to battle!" button (video keeps playing)
 let _introPhase = 0; // 0=playing part1, 1=paused at frame 350, 2=playing part2, 3=ended
 let _introSwapped = false;
@@ -883,13 +884,12 @@ $('introVideo').addEventListener('ended', () => {
 $('introContinueBtn').addEventListener('click', () => {
   $('introContinueBtn').style.display = 'none';
   if (_introPhase === 0 || _introPhase === 1) {
-    // Skip to second part — jump past frame 350 pause
+    // Continue from where it paused
     if (_introMusic.paused) startVideoMusic(_introMusic);
     _introPhase = 2;
     const v = $('introVideo');
-    v.currentTime = INTRO_PAUSE_TIME + (5 / 25); // jump to frame 355
     v.play().catch(() => {});
-    _introRaf = requestAnimationFrame(pollIntro); // poll for end pause
+    _introRaf = requestAnimationFrame(pollIntro); // poll for end
   } else {
     // Video ended: go to loading screen
     endVideoIntro();
@@ -1138,19 +1138,24 @@ function playPlayerAttack(killingBlow, isBonus, onHit) {
 }
 
 // Bot attacks (z-front) → 1s later player defends
-// isCrit = true → Heavy attack (same sprite as normal but with Heavy sound + banner)
+// isCrit = true → Heavy attack uses dedicated heavy sprite + reverse transition
 function playEnemyAttack(killingBlow, onHit, isCrit) {
   const botCanvas = $('botCanvas');
   return new Promise(async resolve => {
-    await Promise.all([waitReady(botAttackAnim), waitReady(userDefenseAnim)]);
+    const readyList = [waitReady(botAttackAnim), waitReady(userDefenseAnim)];
+    if (isCrit) readyList.push(waitReady(botHeavyAttackAnim));
+    await Promise.all(readyList);
     botCanvas.classList.add('z-front');
     botDefaultAnim.stop();
 
     let attack;
     if (isCrit) {
-      // Heavy attack — same animation + hit sound, Heavy sound synced with banner on hit
-      setTimeout(() => playSfx('assets/beer-attack.mp3', 0.15, 2.0), 600);
-      attack = botAttackAnim.playOnce();
+      // Heavy attack — skull sprite, then reverse sprite back to default
+      setTimeout(() => playSfx('assets/beer-attack.mp3', 0.35, 2.0), 600);
+      attack = (async () => {
+        await botHeavyAttackAnim.playOnce();
+        await botHeavyReverseAnim.playOnce();
+      })();
     } else {
       // Normal attack
       setTimeout(() => playSfx('assets/beer-attack.mp3', 0.15, 2.0), 600);
